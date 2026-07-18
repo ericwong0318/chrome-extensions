@@ -21,6 +21,42 @@ A Chrome extension (Manifest V3) that lets you block users on Zhihu by hiding al
 | End-to-end tests | Playwright 1.61 (Chromium) |
 | Language | TypeScript 5 |
 
+## How to Use
+
+### Install (load unpacked)
+
+The extension is built as a standard MV3 unpacked extension. You do not need a Chrome Web Store listing to use it locally.
+
+1. Build the extension:
+   ```bash
+   npm install
+   npm run build
+   ```
+   This outputs the unpacked extension to the `dist/` folder.
+2. Open Chrome and navigate to `chrome://extensions`.
+3. Enable **Developer mode** (top-right toggle).
+4. Click **Load unpacked** and select the `dist/` directory.
+5. The extension icon appears in the toolbar. Visit Zhihu — when a user link (`.UserLink-link` inside `.AuthorInfo-head`) is detected in your feed, a **Block** button is injected next to the name.
+
+### Blocking / unblocking
+
+- **Block** — hides that user's posts and adds them to `chrome.storage.sync`.
+- **Unlock** — temporarily reveal a blocked user's content without removing the block.
+- **Lock** — re-hide a previously unlocked user.
+- **Unblock** — remove the user from storage entirely (content stays visible).
+- **Options page** — click the toolbar icon (or right-click → Options) to view all blocked users, unblock them individually, or **Clear all**.
+
+> Blocked users are stored under the `zhihuBlockedUsers` key in `chrome.storage.sync`, so they sync across Chrome profiles/devices where you're signed in.
+
+### Development
+
+```bash
+npm run dev        # development build (vite --mode development)
+npm run preview    # preview the built extension
+npm test           # run unit/integration tests once
+npm run test:watch # run tests in watch mode
+```
+
 ## Project Structure
 
 ```
@@ -128,3 +164,41 @@ Playwright test running the **real** extension against a local Zhihu-like fixtur
   - Imports `@testing-library/jest-dom` matchers.
   - Provides a shared `mockChromeStorage` (an in-memory `chrome.storage.sync` mock) and resets it before each test.
 - **Playwright** loads the unpacked `dist/` extension into Chromium and serves the fixture via `e2e/server.mjs`. It runs offline and exercises the actual content script, not a mock.
+
+---
+
+## CI/CD Pipeline
+
+This repo uses two GitHub Actions workflows under `.github/workflows/`.
+
+### CI — `.github/workflows/ci.yml`
+
+| | |
+| --- | --- |
+| **Trigger** | Push to `main`, and any pull request targeting `main` |
+| **Runner** | `ubuntu-latest` (host) running the `node:20-bookworm-slim` container |
+| **Steps** | 1. Checkout (`actions/checkout@v4`)<br>2. Cache npm (`~/.npm`, keyed on `package-lock.json`)<br>3. `npm ci`<br>4. `npm test` (Vitest)<br>5. `npm run build` (Vite → `dist/`)<br>6. Upload `dist/` as the `extension-dist` artifact |
+
+Purpose: catch broken tests/builds before they reach `main`. Every PR shows a green/red check.
+
+### Release — `.github/workflows/release.yml`
+
+| | |
+| --- | --- |
+| **Trigger** | Push of any tag matching `v*` (e.g. `v1.0.0`) |
+| **Permissions** | `contents: write` (needed to create the GitHub Release) |
+| **Runner** | `ubuntu-latest` (host) running the `node:20-bookworm-slim` container |
+| **Steps** | 1. Checkout<br>2. Cache npm<br>3. `npm ci`<br>4. `npm test`<br>5. `npm run build`<br>6. `apt-get install zip` (slim image has no `zip`)<br>7. Zip `dist/` → `zhihu-user-blocker-<tag>.zip`<br>8. Create GitHub Release with the zip attached (`softprops/action-gh-release@v2`, auto-generated notes) |
+
+Purpose: produce a versioned, downloadable extension package and a GitHub Release whenever a `v*` tag is pushed.
+
+### How to cut a release
+
+```bash
+git tag -a v1.0.0 -m "Release v1.0.0"
+git push origin v1.0.0
+```
+
+The tag push triggers the Release workflow automatically. The resulting zip is attached to the release at `https://github.com/ericwong0318/chrome-extensions/releases/tag/v1.0.0`.
+
+> **Note on images:** both workflows run inside `node:20-bookworm-slim` — a lightweight (~150–200 MB) Debian-based image. It ships no `zip`, so the Release job installs it via `apt-get` before packaging. The outer `ubuntu-latest` runner is GitHub's standard hosted Linux image and hosts the container; its size is fixed and not something you tune via image choice.
