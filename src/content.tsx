@@ -7,7 +7,17 @@ const overlayId = 'my-extension-root';
 
 // Capture unexpected runtime errors in the content script context.
 if (typeof window !== 'undefined') {
+  // Benign browser notifications that are not real errors and should not be
+  // logged. The ResizeObserver loop message fires when a ResizeObserver
+  // callback causes a layout change that re-triggers the observer (commonly
+  // triggered by MUI components) — it is self-correcting and harmless.
+  const isBenignError = (message?: string) =>
+    !!message &&
+    (message.includes('ResizeObserver loop completed with undelivered notifications.') ||
+      message.includes('ResizeObserver loop limit exceeded'));
+
   window.addEventListener('error', (e) => {
+    if (isBenignError(e.message)) return;
     logError('Uncaught error in content script', e.message);
   });
   window.addEventListener('unhandledrejection', (e) => {
