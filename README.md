@@ -312,12 +312,23 @@ Purpose: produce a versioned, downloadable extension package and a GitHub Releas
 
 ### How to cut a release
 
-```bash
-git tag -a v1.0.0 -m "Release v1.0.0"
-git push origin v1.0.0
-```
+This project uses [Release Please](https://github.com/googleapis/release-please) to automate releases entirely in CI. It reads [Conventional Commits](https://www.conventionalcommits.org/) on `main`, maintains a running release PR that bumps `package.json` **and** `manifest.json` together (plus `CHANGELOG.md`), and — when that PR is merged — creates the GitHub Release and `v*` tag. The tag then triggers the build/publish workflow below.
 
-The tag push triggers the Release workflow automatically. The resulting zip is attached to the release at `https://github.com/ericwong0318/chrome-extensions/releases/tag/v1.0.0`.
+**Versioning rule (for agents and humans):**
+- `fix:` commit → patch bump (`v1.2.x`)
+- `feat:` commit → minor bump (`v1.x.0`)
+- `BREAKING CHANGE:` in commit body → major bump (`vX.0.0`)
+
+To release:
+
+1. Merge feature/fix PRs to `main` using conventional commit messages.
+2. Release Please automatically keeps a **"release PR"** up to date with the pending version bump and changelog.
+3. **Merge the release PR.** This creates the `vX.Y.Z` tag and the GitHub Release.
+4. The tag push triggers the Release workflow (`.github/workflows/release.yml`), which builds and attaches the `zhihu-user-blocker-<tag>.zip` to the release.
+
+No local version-bumping commands are needed — an AI coding agent just needs to write conventional-commit messages; Release Please handles the rest.
+
+> The Release workflow also re-syncs `manifest.json` from `package.json` before building, as a safety net against version drift.
 
 > **Note on images:** both workflows run inside `node:24-bookworm-slim` — a lightweight (~150–200 MB) Debian-based image. It ships no `zip`, so the Release job installs it via `apt-get` before packaging. The outer `ubuntu-latest` runner is GitHub's standard hosted Linux image and hosts the container; its size is fixed and not something you tune via image choice.
 

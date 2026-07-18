@@ -26,6 +26,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Sync manifest version with package.json
+        run: node -e "const fs=require('fs');const p=require('./package.json');const m=JSON.parse(fs.readFileSync('manifest.json','utf8'));m.version=p.version;fs.writeFileSync('manifest.json',JSON.stringify(m,null,2)+'\n')"
+
       - name: Run tests
         run: npm test
 
