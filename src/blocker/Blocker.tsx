@@ -73,7 +73,7 @@ const InlineControls: React.FC<{
   </Box>
 );
 
-const Overlay: React.FC = () => {
+const Blocker: React.FC = () => {
   const [blocked, setBlocked] = useState<BlockedUser[]>([]);
   // Users that are temporarily unlocked (content visible but still blocked)
   const [unlocked, setUnlocked] = useState<string[]>([]);
@@ -213,4 +213,4 @@ const Overlay: React.FC = () => {
   );
 };
 
-export default Overlay;
+export default Blocker;

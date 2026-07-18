@@ -1,6 +1,6 @@
 import { render, screen, fireEvent, waitFor, cleanup } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import Overlay from './Overlay';
+import Blocker from './Blocker';
 import { mockChromeStorage } from '../test/setup';
 
 // Build a minimal fake Zhihu DOM. The content script's getZhihuUsers() only
@@ -34,10 +34,10 @@ afterEach(() => {
   document.body.innerHTML = '';
 });
 
-describe('Overlay (unit)', () => {
+describe('Blocker (unit)', () => {
   it('renders a Block button next to the detected user name', async () => {
     seedZhihuDom();
-    render(<Overlay />);
+    render(<Blocker />);
     // The inline control is portaled right after the user link.
     const link = document.querySelector('.UserLink-link') as HTMLElement;
     await waitFor(() => {
@@ -48,7 +48,7 @@ describe('Overlay (unit)', () => {
 
   it('blocks a user: hides content and persists to storage', async () => {
     const { listItem, link } = seedZhihuDom();
-    render(<Overlay />);
+    render(<Blocker />);
     const blockBtn = await waitFor(() => {
       const next = link.nextElementSibling as HTMLElement;
       return next.querySelector('button') as HTMLButtonElement;
@@ -65,7 +65,7 @@ describe('Overlay (unit)', () => {
 
   it('unlock reveals content, lock re-hides it', async () => {
     const { listItem, link } = seedZhihuDom();
-    render(<Overlay />);
+    render(<Blocker />);
     const blockBtn = await waitFor(() => (link.nextElementSibling as HTMLElement).querySelector('button') as HTMLButtonElement);
     fireEvent.click(blockBtn);
 
@@ -84,7 +84,7 @@ describe('Overlay (unit)', () => {
 
   it('unblock removes the user from storage and shows content', async () => {
     const { listItem, link } = seedZhihuDom();
-    render(<Overlay />);
+    render(<Blocker />);
     const blockBtn = await waitFor(() => (link.nextElementSibling as HTMLElement).querySelector('button') as HTMLButtonElement);
     fireEvent.click(blockBtn);
 
