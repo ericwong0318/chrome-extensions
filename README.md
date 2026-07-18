@@ -80,8 +80,10 @@ vitest.config.ts           # Vitest config (jsdom, setup file)
 playwright.config.js       # Playwright config (loads unpacked dist/ extension)
 src/
   background.ts            # Service worker: message handler + action click
-  content.tsx             # Content script: mounts shadow root + overlay
-  overlay/Overlay.tsx     # Inline block/unblock/lock/unlock controls
+  content.tsx             # Content script: mounts shadow root + Blocker
+  blocker/Blocker.tsx     # Inline block/unblock/lock/unlock controls
+  logger.ts               # Error/warning/info logging to chrome.storage.local
+  options/index.tsx       # Options page entry (mounts Options UI)
   options/Options.tsx     # Options page UI
   test/setup.ts           # Shared chrome.storage mock + jest-dom
 e2e/
@@ -131,7 +133,7 @@ Clicking the toolbar action (`action.onClicked`) opens the options page via `chr
 
 ## Test Cases
 
-There are **17 test cases across 5 files**: 16 Vitest unit/integration tests and 1 Playwright end-to-end test.
+There are **21 test cases across 6 files**: 20 Vitest unit/integration tests and 1 Playwright end-to-end test.
 
 ### `src/background.test.ts` — Background Script (6 tests)
 
@@ -163,9 +165,9 @@ Integration tests that import `content.tsx` and inspect the live DOM.
 
 
 
-### `src/overlay/Overlay.test.tsx` — Overlay Component (4 tests)
+### `src/blocker/Blocker.test.tsx` — Blocker Component (4 tests)
 
-Renders `<Overlay />` against a seeded fake Zhihu DOM (`.UserLink-link` inside `.AuthorInfo-head`).
+Renders `<Blocker />` against a seeded fake Zhihu DOM (`.UserLink-link` inside `.AuthorInfo-head`).
 
 
 | Test                                                    | What it verifies                                                                                 |
@@ -192,6 +194,17 @@ Unit tests for the options UI against a mocked `chrome.storage`.
 
 
 
+
+### `src/logger.test.ts` — Logger (4 tests)
+
+Unit tests for the error/warning/info logger that persists to `chrome.storage.local`.
+
+| Test                                           | What it verifies                                                       |
+| ---------------------------------------------- | -------------------------------------------------------------------- |
+| stores an error log entry in chrome.storage.local | `logError` writes one entry (level `error`, message, context, timestamp). |
+| records warn and info levels                   | `logWarn`/`logInfo` persist with the correct levels.                  |
+| clears all logs                              | `clearLogs` empties the stored log list.                              |
+| caps stored entries at 200 (newest kept)    | After 250 writes, only the 200 newest entries remain.                  |
 
 ### `e2e/extension.spec.ts` — End-to-End (1 test)
 
