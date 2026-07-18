@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Box, Button, ThemeProvider, createTheme } from '@mui/material';
 import { logError } from '../logger';
@@ -87,9 +87,35 @@ const Overlay: React.FC = () => {
     }
   }, []);
   const [users, setUsers] = useState<ZhihuUser[]>([]);
+  const scanTimer = useRef<number | undefined>(undefined);
 
   useEffect(() => {
-    setUsers(getZhihuUsers());
+    // Merge any newly discovered users into the existing list, keeping the
+    // first-seen element reference but refreshing it if Zhihu re-rendered it.
+    const scan = () => {
+      setUsers((prev) => {
+        const map = new Map(prev.map((u) => [u.id, u]));
+        getZhihuUsers().forEach((u) => map.set(u.id, u));
+        return Array.from(map.values());
+      });
+    };
+
+    scan(); // initial collection
+
+    // Zhihu lazy-loads answers as the user scrolls, so user links for
+    // not-yet-visible answers are absent from the DOM on mount. Observe the
+    // document for added nodes and re-scan (debounced) so those late answers
+    // also receive their block controls.
+    const observer = new MutationObserver(() => {
+      if (scanTimer.current) window.clearTimeout(scanTimer.current);
+      scanTimer.current = window.setTimeout(scan, 200);
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+
+    return () => {
+      observer.disconnect();
+      if (scanTimer.current) window.clearTimeout(scanTimer.current);
+    };
   }, []);
 
   const blockUser = (id: string, name: string) => {
