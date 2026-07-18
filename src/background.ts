@@ -1,4 +1,5 @@
 import { logError } from './logger';
+import { callProvider } from './factcheck/providers';
 
 export {};
 
@@ -39,6 +40,30 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.action === 'getBlockedUsers') {
       chrome.storage.sync.get({ zhihuBlockedUsers: [] }, (result) => {
         sendResponse({ users: result.zhihuBlockedUsers as { id: string; name: string }[] });
+      });
+      return true;
+    }
+
+    if (request.action === 'factCheck') {
+      chrome.storage.sync.get({ factCheckConfig: null }, (result) => {
+        const cfg = result.factCheckConfig as
+          | { provider?: string; apiKey?: string; model?: string; baseUrl?: string; language?: string }
+          | null
+          | undefined;
+        if (!cfg || !cfg.provider) {
+          sendResponse({ disabled: true });
+          return;
+        }
+        callProvider(request.text ?? '', {
+          provider: cfg.provider as any,
+          apiKey: cfg.apiKey,
+          model: cfg.model,
+          baseUrl: cfg.baseUrl,
+          language: cfg.language as any,
+        }).then((res) => {
+          if (res.ok) sendResponse({ result: res.result });
+          else sendResponse({ error: res.error });
+        });
       });
       return true;
     }

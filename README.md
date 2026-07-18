@@ -9,7 +9,8 @@ A Chrome extension (Manifest V3) that lets you block users on Zhihu by hiding al
 - **Toggle controls** — `Block` → `Unlock` (reveal) → `Lock` (re-hide) → `Unblock` (remove from storage).
 - **Options page** — view, unblock individually, or clear all blocked users.
 - **Shadow DOM isolation** — the extension mounts into `#my-extension-root` with its own shadow root so its styles don't leak into the page.
-- **Service worker message hub** — the background script handles `blockUser`, `unblockUser`, and `getBlockedUsers` messages and persists to `chrome.storage.sync`.
+- **Service worker message hub** — the background script handles `blockUser`, `unblockUser`, `getBlockedUsers`, and `factCheck` messages and persists to `chrome.storage.sync`.
+- **AI Fact Check** — a "Fact Check" button is injected right next to the **Block** button on each answer/question. Clicking it sends the text to an AI provider (configured in Options) and shows a structured analysis: **Validity vs. Truth**, **Ethos / Pathos / Logos**, and **informal fallacies**, plus a verdict (Credible / Misleading / Unverified). You can choose the reply language (简体中文 / 繁體中文 / English) in Options.
 
 
 
@@ -122,6 +123,7 @@ The background service worker listens for `chrome.runtime.onMessage` and support
 | `blockUser`       | `{ userId, userName }` | `{ success: true }` (dedupes by id) |
 | `unblockUser`     | `{ userId }`           | `{ success: true }`                 |
 | `getBlockedUsers` | —                      | `{ users: [{ id, name }] }`         |
+| `factCheck`       | `{ text }`             | `{ result: FactCheckResult }` or `{ disabled: true }` or `{ error }` |
 | (unknown)         | —                      | `undefined`                         |
 
 
@@ -129,11 +131,53 @@ Clicking the toolbar action (`action.onClicked`) opens the options page via `chr
 
 ---
 
+## Fact Check (AI)
+
+The extension can send any Zhihu answer or question to an AI provider for a structured critical-thinking analysis. The feature is **online only** — there is no local/offline analysis.
+
+### How it works
+ 1. On each answer/question body (`.RichText`, `.ContentItem-title`, `.AnswerCard`, `.QuestionAnswer-content`), a **Fact Check** button is injected inline right next to the **Block** button (the block controls container). Collapsed answers that match several selectors collapse into a single button, so there is never more than one Fact Check button per answer.
+2. Clicking it messages the background service worker (`action: 'factCheck'`), which reads the provider config from `chrome.storage.sync` (`factCheckConfig`) and calls the provider. **The API key never reaches the content script** — only the background worker sees it.
+3. The provider returns a structured analysis that the popover renders:
+   - **Formal Logic — Validity vs. Truth**: is the reasoning structurally sound, and are the premises actually true?
+   - **Rhetoric — Ethos / Pathos / Logos**: credibility, emotion, and logical appeals used.
+   - **Informal Fallacies**: any detected fallacies (ad hominem, straw man, false dilemma, appeal to emotion, etc.) with the quoted span.
+   - **Verdict**: Credible / Misleading / Unverified.
+
+### Providers (configured in Options → "Fact Check (AI)")
+| Provider | Key needed? | Notes |
+| -------- | ----------- | ----- |
+| **Claude** (Anthropic) | Yes | Calls `https://api.anthropic.com/v1/messages`. |
+| **Local** (Ollama / Qwen / llama.cpp) | No (free) | OpenAI-compatible `/v1/chat/completions` at a configurable base URL (default `http://localhost:11434/v1`). Run a local model for free, private analysis. |
+| **Gemini** (Google) | Yes | Calls `generativelanguage.googleapis.com`. |
+| **OpenAI** | Yes | Calls `https://api.openai.com/v1/chat/completions`. |
+| **DeepSeek** | Yes | Calls `https://api.deepseek.com/v1/chat/completions`. |
+| **OpenRouter** | Yes | Calls `https://openrouter.ai/api/v1` (OpenAI-compatible; access many models via one key). |
+| **Other** (OpenAI-compatible) | Optional | Custom base URL + model (e.g. a self-hosted LangGraph agent endpoint). |
+
+If no provider is selected, the Fact Check button is disabled with a tooltip pointing to Options.
+
+### Reply language
+
+In Options → "Fact Check (AI)" you can pick the language the AI should reply in:
+
+| Language setting | Value sent to the model |
+| ---------------- | ----------------------- |
+| 中文（简体）      | `zh-CN`                 |
+| 中文（繁體）      | `zh-TW`                 |
+| English          | `en` (default)          |
+
+The chosen language is appended as an instruction to the prompt so the analysis is returned in that language.
+
+> **Note on agents / LangGraph:** agent orchestration (multi-step planning, tool use) belongs in a **backend** service, not the extension. Point the **Other** provider at your own hosted endpoint (e.g. a Cloudflare Worker or server running LangGraph) to get agentic behavior while keeping the extension thin.
+
+---
+
 
 
 ## Test Cases
 
-There are **21 test cases across 6 files**: 20 Vitest unit/integration tests and 1 Playwright end-to-end test.
+There are **47 test cases across 6 files**: 46 Vitest unit/integration tests and 1 Playwright end-to-end test.
 
 ### `src/background.test.ts` — Background Script (6 tests)
 
@@ -165,7 +209,7 @@ Integration tests that import `content.tsx` and inspect the live DOM.
 
 
 
-### `src/blocker/Blocker.test.tsx` — Blocker Component (4 tests)
+### `src/blocker/Blocker.test.tsx` — Blocker Component (6 tests)
 
 Renders `<Blocker />` against a seeded fake Zhihu DOM (`.UserLink-link` inside `.AuthorInfo-head`).
 
@@ -176,11 +220,13 @@ Renders `<Blocker />` against a seeded fake Zhihu DOM (`.UserLink-link` inside `
 | blocks a user: hides content and persists to storage    | Clicking Block sets `display:none` on the list item and stores the user (`id: '/people/alice'`). |
 | unlock reveals content, lock re-hides it                | Unlock → content shown; Lock → content hidden again.                                             |
 | unblock removes the user from storage and shows content | Clicking Unblock clears storage and reveals content.                                             |
+| renders a Fact Check button next to the Block button    | A `Fact Check` button is portaled into the same inline container as the Block controls.          |
+| renders exactly one Fact Check button for a collapsed answer with multiple matching content selectors | A collapsed answer matching `.ContentItem-title` + `.RichText` + `.AnswerCard` yields exactly one Fact Check button. |
 
 
 
 
-### `src/options/Options.test.tsx` — Options Page (4 tests)
+### `src/options/Options.test.tsx` — Options Page (8 tests)
 
 Unit tests for the options UI against a mocked `chrome.storage`.
 
@@ -191,6 +237,10 @@ Unit tests for the options UI against a mocked `chrome.storage`.
 | lists blocked users with name and id           | Renders the name and id of a blocked user.             |
 | unblock removes a user and persists the change | Clicking Unblock empties the list and updates storage. |
 | clear all empties the block list               | Clicking "Clear all" removes all users and persists.   |
+| fact-check provider config is loaded and saved | Provider/apiKey/baseUrl/model persist to `factCheckConfig`. |
+| fact-check language setting is loaded and saved | The reply-language select persists to `factCheckConfig.language`. |
+| disabling fact check hides the provider fields | Toggling fact check off hides provider inputs.         |
+| fact check button disabled when no provider    | Options reflects the disabled state when no provider is set. |
 
 
 

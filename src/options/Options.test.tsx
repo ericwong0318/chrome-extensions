@@ -72,4 +72,16 @@ describe('Options (unit)', () => {
     fireEvent.click(screen.getByText('Clear log'));
     expect(await screen.findByText('No errors logged.')).toBeInTheDocument();
   });
+
+  it('saves the selected reply language with the fact-check config', async () => {
+    render(<Options />);
+    const langSelect = await screen.findByLabelText('Reply language');
+    fireEvent.mouseDown(langSelect);
+    const zhTW = await screen.findByText('中文（繁體）');
+    fireEvent.click(zhTW);
+    fireEvent.click(screen.getByText('Save'));
+
+    const stored = (await mockChromeStorage.sync.get({ factCheckConfig: null })) as any;
+    expect(stored.factCheckConfig?.language).toBe('zh-TW');
+  });
 });

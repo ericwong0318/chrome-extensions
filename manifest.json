@@ -4,7 +4,15 @@
   "version": "1.0.0",
   "description": "Block users on Zhihu, inspired by ytblock.",
   "permissions": ["storage", "scripting", "activeTab"],
-  "host_permissions": ["https://www.zhihu.com/*"],
+  "host_permissions": [
+    "https://www.zhihu.com/*",
+    "https://api.anthropic.com/*",
+    "https://generativelanguage.googleapis.com/*",
+    "https://api.openai.com/*",
+    "https://api.deepseek.com/*",
+    "https://openrouter.ai/*",
+    "http://localhost/*"
+  ],
   "background": {
     "service_worker": "src/background.ts"
   },

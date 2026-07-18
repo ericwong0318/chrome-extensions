@@ -11,23 +11,52 @@ import {
   Chip,
   ThemeProvider,
   createTheme,
+  TextField,
+  MenuItem,
+  Stack,
 } from '@mui/material';
 import { getLogs, clearLogs, LogEntry } from '../logger';
+import { FactCheckLanguage, LANGUAGE_LABELS } from '../factcheck/prompt';
 
 type BlockedUser = { id: string; name: string };
+
+type FactCheckConfig = {
+  provider: 'claude' | 'local' | 'gemini' | 'openai' | 'deepseek' | 'openrouter' | 'other' | '';
+  apiKey?: string;
+  model?: string;
+  baseUrl?: string;
+  language?: FactCheckLanguage;
+};
 
 const Options: React.FC = () => {
   const [blocked, setBlocked] = useState<BlockedUser[]>([]);
   const [logs, setLogs] = useState<LogEntry[]>([]);
+  const [fcConfig, setFcConfig] = useState<FactCheckConfig>({ provider: '' });
+  const [fcSaved, setFcSaved] = useState(false);
 
   useEffect(() => {
     if (typeof chrome !== 'undefined' && chrome.storage) {
       chrome.storage.sync.get({ zhihuBlockedUsers: [] }, (result) => {
         if (result.zhihuBlockedUsers) setBlocked(result.zhihuBlockedUsers as BlockedUser[]);
       });
+      chrome.storage.sync.get({ factCheckConfig: null }, (result) => {
+        if (result.factCheckConfig) setFcConfig(result.factCheckConfig as FactCheckConfig);
+      });
       getLogs().then(setLogs);
     }
   }, []);
+
+  const saveFcConfig = () => {
+    if (typeof chrome === 'undefined' || !chrome.storage) return;
+    const toSave: FactCheckConfig = {
+      provider: fcConfig.provider,
+      apiKey: fcConfig.apiKey,
+      model: fcConfig.model,
+      baseUrl: fcConfig.baseUrl,
+      language: fcConfig.language,
+    };
+    chrome.storage.sync.set({ factCheckConfig: toSave }, () => setFcSaved(true));
+  };
 
   const refreshLogs = () => {
     if (typeof chrome !== 'undefined' && chrome.storage) {
@@ -91,6 +120,132 @@ const Options: React.FC = () => {
             </List>
           </Box>
         )}
+
+        <Divider sx={{ my: 3 }} />
+
+        <Typography variant="h5" gutterBottom>
+          Fact Check (AI)
+        </Typography>
+        <Typography variant="body2" color="text.secondary" gutterBottom>
+          Send an answer or question to an AI provider for a structured analysis
+          (Validity vs. Truth, Ethos/Pathos/Logos, and informal fallacies). The API
+          key stays in chrome.storage and is only used by the background service worker.
+        </Typography>
+
+        <Box sx={{ mt: 2 }}>
+          <Stack spacing={2} maxWidth={420}>
+            <TextField
+              select
+              label="Provider"
+              value={fcConfig.provider}
+              onChange={(e) => {
+                setFcSaved(false);
+                setFcConfig({ ...fcConfig, provider: e.target.value as FactCheckConfig['provider'] });
+              }}
+            >
+              <MenuItem value="">Disabled</MenuItem>
+              <MenuItem value="claude">Claude (Anthropic)</MenuItem>
+              <MenuItem value="local">Local (Ollama / Qwen / llama.cpp, free)</MenuItem>
+              <MenuItem value="gemini">Gemini (Google)</MenuItem>
+              <MenuItem value="openai">OpenAI</MenuItem>
+              <MenuItem value="deepseek">DeepSeek</MenuItem>
+              <MenuItem value="openrouter">OpenRouter</MenuItem>
+              <MenuItem value="other">Other (OpenAI-compatible)</MenuItem>
+            </TextField>
+
+            {fcConfig.provider === 'local' && (
+              <TextField
+                label="Base URL"
+                placeholder="http://localhost:11434/v1"
+                value={fcConfig.baseUrl || ''}
+                onChange={(e) => {
+                  setFcSaved(false);
+                  setFcConfig({ ...fcConfig, baseUrl: e.target.value });
+                }}
+              />
+            )}
+
+            {(fcConfig.provider === 'claude' ||
+              fcConfig.provider === 'gemini' ||
+              fcConfig.provider === 'openai' ||
+              fcConfig.provider === 'deepseek' ||
+              fcConfig.provider === 'openrouter' ||
+              fcConfig.provider === 'other') && (
+              <TextField
+                label="API Key"
+                type="password"
+                value={fcConfig.apiKey || ''}
+                onChange={(e) => {
+                  setFcSaved(false);
+                  setFcConfig({ ...fcConfig, apiKey: e.target.value });
+                }}
+              />
+            )}
+
+            {fcConfig.provider === 'other' && (
+              <TextField
+                label="Base URL"
+                placeholder="https://api.openai.com/v1"
+                value={fcConfig.baseUrl || ''}
+                onChange={(e) => {
+                  setFcSaved(false);
+                  setFcConfig({ ...fcConfig, baseUrl: e.target.value });
+                }}
+              />
+            )}
+
+            <TextField
+              label="Model"
+              placeholder={
+                fcConfig.provider === 'gemini'
+                  ? 'gemini-1.5-flash'
+              : fcConfig.provider === 'claude'
+              ? 'claude-3-5-sonnet-latest'
+              : fcConfig.provider === 'openrouter'
+              ? 'openai/gpt-4o-mini'
+              : fcConfig.provider === 'openai'
+              ? 'gpt-4o-mini'
+              : fcConfig.provider === 'deepseek'
+              ? 'deepseek-chat'
+              : fcConfig.provider === 'local'
+              ? 'llama3.1'
+              : 'gpt-4o-mini'
+              }
+              value={fcConfig.model || ''}
+              onChange={(e) => {
+                setFcSaved(false);
+                setFcConfig({ ...fcConfig, model: e.target.value });
+              }}
+            />
+
+            <TextField
+              select
+              label="Reply language"
+              value={fcConfig.language || 'en'}
+              onChange={(e) => {
+                setFcSaved(false);
+                setFcConfig({ ...fcConfig, language: e.target.value as FactCheckLanguage });
+              }}
+            >
+              {(Object.keys(LANGUAGE_LABELS) as FactCheckLanguage[]).map((lang) => (
+                <MenuItem key={lang} value={lang}>
+                  {LANGUAGE_LABELS[lang]}
+                </MenuItem>
+              ))}
+            </TextField>
+
+            <Box>
+              <Button variant="contained" size="small" onClick={saveFcConfig}>
+                Save
+              </Button>
+              {fcSaved && (
+                <Typography variant="body2" color="success.main" sx={{ ml: 1, display: 'inline' }}>
+                  Saved.
+                </Typography>
+              )}
+            </Box>
+          </Stack>
+        </Box>
 
         <Divider sx={{ my: 3 }} />
 
