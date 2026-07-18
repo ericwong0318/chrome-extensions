@@ -1,9 +1,13 @@
 {
   "manifest_version": 3,
   "name": "Zhihu User Blocker",
-  "version": "1.0.0",
+  "version": "1.2.0",
   "description": "Block users on Zhihu, inspired by ytblock.",
-  "permissions": ["storage", "scripting", "activeTab"],
+  "permissions": [
+    "storage",
+    "scripting",
+    "activeTab"
+  ],
   "host_permissions": [
     "https://www.zhihu.com/*",
     "https://api.anthropic.com/*",
@@ -23,11 +27,12 @@
         "https://zhihu.com/*",
         "http://127.0.0.1/*"
       ],
-      "js": ["src/content.tsx"],
+      "js": [
+        "src/content.tsx"
+      ],
       "run_at": "document_end"
     }
   ],
   "action": {},
   "options_page": "options.html"
-
 }
