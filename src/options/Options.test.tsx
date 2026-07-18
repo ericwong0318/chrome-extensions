@@ -2,9 +2,11 @@ import { render, screen, fireEvent, waitFor, cleanup } from '@testing-library/re
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import Options from './Options';
 import { mockChromeStorage } from '../test/setup';
+import { logError, clearLogs } from '../logger';
 
-beforeEach(() => {
+beforeEach(async () => {
   (global as any).chrome = { storage: mockChromeStorage };
+  await clearLogs();
 });
 
 afterEach(() => {
@@ -49,5 +51,25 @@ describe('Options (unit)', () => {
     expect(await screen.findByText('No users blocked.')).toBeInTheDocument();
     const stored = (await mockChromeStorage.sync.get({ zhihuBlockedUsers: [] })) as any;
     expect(stored.zhihuBlockedUsers).toHaveLength(0);
+  });
+
+  it('shows empty state for the error log', async () => {
+    render(<Options />);
+    expect(await screen.findByText('No errors logged.')).toBeInTheDocument();
+  });
+
+  it('displays logged errors with level and message', async () => {
+    await logError('boom', 'background');
+    render(<Options />);
+    expect(await screen.findByText('boom (background)')).toBeInTheDocument();
+    expect(screen.getByText('error')).toBeInTheDocument();
+  });
+
+  it('clear log empties the displayed errors', async () => {
+    await logError('boom', 'background');
+    render(<Options />);
+    expect(await screen.findByText('boom (background)')).toBeInTheDocument();
+    fireEvent.click(screen.getByText('Clear log'));
+    expect(await screen.findByText('No errors logged.')).toBeInTheDocument();
   });
 });

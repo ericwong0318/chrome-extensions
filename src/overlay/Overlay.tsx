@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Box, Button, ThemeProvider, createTheme } from '@mui/material';
+import { logError } from '../logger';
 
 type BlockedUser = { id: string; name: string };
 type ZhihuUser = { name: string; id: string; element: HTMLElement };
@@ -8,16 +9,21 @@ type ZhihuUser = { name: string; id: string; element: HTMLElement };
 const INLINE_CLASS = 'zhihu-block-inline';
 
 const getZhihuUsers = () => {
-  // Try to find user cards or author links on Zhihu answers/comments
-  const userNodes = Array.from(document.querySelectorAll('[data-za-detail-view-path^="User"] a.UserLink-link, .AuthorInfo-head a.UserLink-link'));
-  const users: ZhihuUser[] = [];
-  userNodes.forEach((el) => {
-    const name = el.textContent?.trim() || '未知用户';
-    const id = el.getAttribute('href') || name;
-    users.push({ name, id, element: el as HTMLElement });
-  });
-  // Remove duplicates by id
-  return Array.from(new Map(users.map(u => [u.id, u])).values());
+  try {
+    // Try to find user cards or author links on Zhihu answers/comments
+    const userNodes = Array.from(document.querySelectorAll('[data-za-detail-view-path^="User"] a.UserLink-link, .AuthorInfo-head a.UserLink-link'));
+    const users: ZhihuUser[] = [];
+    userNodes.forEach((el) => {
+      const name = el.textContent?.trim() || '未知用户';
+      const id = el.getAttribute('href') || name;
+      users.push({ name, id, element: el as HTMLElement });
+    });
+    // Remove duplicates by id
+    return Array.from(new Map(users.map(u => [u.id, u])).values());
+  } catch (err) {
+    logError('Failed to collect Zhihu users', String(err));
+    return [];
+  }
 };
 
 // Walk up from a user link to the content container and toggle visibility

@@ -1,8 +1,20 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import Overlay from './overlay/Overlay';
+import { logError } from './logger';
 
 const overlayId = 'my-extension-root';
+
+// Capture unexpected runtime errors in the content script context.
+if (typeof window !== 'undefined') {
+  window.addEventListener('error', (e) => {
+    logError('Uncaught error in content script', e.message);
+  });
+  window.addEventListener('unhandledrejection', (e) => {
+    const reason = e instanceof PromiseRejectionEvent ? String(e.reason) : 'unknown';
+    logError('Unhandled promise rejection in content script', reason);
+  });
+}
 
 if (!document.getElementById(overlayId)) {
   // 1. Create a secure host container
