@@ -242,7 +242,7 @@ Purpose: catch broken tests/builds before they reach `main`. Every PR shows a gr
 | **Trigger**     | Push of any tag matching `v`* (e.g. `v1.0.0`)                                                                                                                                                                                                                                    |
 | **Permissions** | `contents: write` (needed to create the GitHub Release)                                                                                                                                                                                                                          |
 | **Runner**      | `ubuntu-latest` (host) running the `node:24-bookworm-slim` container                                                                                                                                                                                                             |
-| **Steps**       | 1. Checkout (`actions/checkout@v7`) 2. Cache npm (`actions/cache@v6`) 3. `npm ci` 4. `npm test` 5. `npm run build` 6. `apt-get install zip` (slim image has no `zip`) 7. Zip `dist/` → `zhihu-user-blocker-<tag>.zip` 8. Create GitHub Release with the zip attached (`softprops/action-gh-release@v2`, auto-generated notes) |
+| **Steps**       | 1. Checkout (`actions/checkout@v7`) 2. Cache npm (`actions/cache@v6`) 3. `npm ci` 4. `npm test` 5. `npm run build` 6. `apt-get install zip` (slim image has no `zip`) 7. Zip `dist/` → `zhihu-user-blocker-<tag>.zip` 8. Create GitHub Release with the zip attached (`softprops/action-gh-release@v3`, auto-generated notes) |
 
 
 Purpose: produce a versioned, downloadable extension package and a GitHub Release whenever a `v*` tag is pushed.
