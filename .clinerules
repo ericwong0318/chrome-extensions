@@ -1,0 +1,75 @@
+# Cline Rules
+
+## Behavior Rules
+
+### Code Quality
+- Always use TypeScript strict mode
+- Follow React functional component patterns
+- Use ESLint and Prettier configurations
+- Write unit tests for new features
+
+### Extension Development
+- Background scripts: Use message passing only
+- Content scripts: No direct DOM manipulation
+- Manifest V3 compliance required
+- Permissions: Minimal necessary scope
+
+### Testing
+- Unit tests: Vitest with React Testing Library
+- E2E tests: Playwright with Chrome/Firefox
+- Test coverage: Minimum 80% for new code
+- Run tests before committing
+
+### Git Workflow
+- Feature branches from main
+- Conventional commit messages
+- PR reviews required
+- CI must pass before merge
+
+### Documentation
+- Update CLAUDE.md for new commands
+- Update DEVELOPER.md for architecture changes
+- JSDoc for public APIs
+- README for user-facing changes
+
+### Performance
+- Lazy load non-critical components
+- Minimize background script work
+- Use efficient content script injection
+- Cache API responses when possible
+
+### Security
+- Sanitize all user inputs
+- Validate message origins
+- No eval() or innerHTML with user data
+- Content Security Policy compliance
+
+## File Patterns
+
+### Component Files
+- `*.tsx` for React components
+- `*.test.tsx` for component tests
+- `*.ts` for utilities and types
+
+### Test Files
+- `*.test.ts` for unit tests
+- `*.spec.ts` for E2E tests
+- `setup.ts` for test configuration
+
+### Configuration
+- `vite.config.ts` for build
+- `vitest.config.ts` for testing
+- `tsconfig.json` for TypeScript
+- `manifest.json` for extension
+
+## Error Handling
+- Try/catch for async operations
+- Graceful degradation for API failures
+- User-friendly error messages
+- Logging for debugging
+
+## Communication
+- Use chrome.runtime.sendMessage for cross-context
+- Port-based for long-lived connections
+- Event-driven architecture
+- Avoid polling when possible
