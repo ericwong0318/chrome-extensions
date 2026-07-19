@@ -90,25 +90,6 @@ describe('Blocker (unit)', () => {
     expect(stored.zhihuBlockedUsers[0].id).toBe('/people/alice');
   });
 
-  it('unlock reveals content, lock re-hides it', async () => {
-    const { listItem, link } = seedZhihuDom();
-    render(<Blocker />);
-    const blockBtn = await waitFor(() => (link.nextElementSibling as HTMLElement).querySelector('button') as HTMLButtonElement);
-    fireEvent.click(blockBtn);
-
-    const unlockBtn = await waitFor(() => (link.nextElementSibling as HTMLElement).querySelector('button') as HTMLButtonElement);
-    expect(unlockBtn.textContent).toBe('Unlock');
-    fireEvent.click(unlockBtn);
-
-    await waitFor(() => expect(listItem.style.display).toBe(''));
-
-    const lockBtn = await waitFor(() => (link.nextElementSibling as HTMLElement).querySelector('button') as HTMLButtonElement);
-    expect(lockBtn.textContent).toBe('Lock');
-    fireEvent.click(lockBtn);
-
-    await waitFor(() => expect(listItem.style.display).toBe('none'));
-  });
-
   it('unblock removes the user from storage and shows content', async () => {
     const { listItem, link } = seedZhihuDom();
     render(<Blocker />);

@@ -115,12 +115,9 @@ const setUserContentHidden = (user: ZhihuUser, hidden: boolean) => {
 const InlineControls: React.FC<{
   user: ZhihuUser;
   isBlocked: boolean;
-  isUnlocked: boolean;
   onBlock: () => void;
-  onUnlock: () => void;
-  onLock: () => void;
   onUnblock: () => void;
-}> = ({ user, isBlocked, isUnlocked, onBlock, onUnlock, onLock, onUnblock }) => (
+}> = ({ user, isBlocked, onBlock, onUnblock }) => (
   <Box
     className={INLINE_CLASS}
     sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5, ml: 0.75, verticalAlign: 'middle' }}
@@ -129,27 +126,16 @@ const InlineControls: React.FC<{
       <Button variant="contained" color="error" size="small" onClick={onBlock}>
         Block
       </Button>
-    ) : isUnlocked ? (
-      <Button variant="outlined" color="primary" size="small" onClick={onLock}>
-        Lock
-      </Button>
     ) : (
-      <>
-        <Button variant="outlined" color="success" size="small" onClick={onUnlock}>
-          Unlock
-        </Button>
-        <Button variant="text" color="secondary" size="small" onClick={onUnblock}>
-          Unblock
-        </Button>
-      </>
+      <Button variant="text" color="secondary" size="small" onClick={onUnblock}>
+        Unblock
+      </Button>
     )}
   </Box>
 );
 
 const Blocker: React.FC = () => {
   const [blocked, setBlocked] = useState<BlockedUser[]>([]);
-  // Users that are temporarily unlocked (content visible but still blocked)
-  const [unlocked, setUnlocked] = useState<string[]>([]);
 
   // Load blocked users from chrome.storage on mount
   useEffect(() => {
@@ -252,25 +238,10 @@ const Blocker: React.FC = () => {
     }
   };
 
-  // Unlock: temporarily reveal the user's content without removing the block
-  const unlockUser = (id: string) => {
-    setUnlocked([...unlocked, id]);
-    const user = users.find(u => u.id === id);
-    if (user) setUserContentHidden(user, false);
-  };
-
-  // Lock: re-hide the temporarily unlocked user's content
-  const lockUser = (id: string) => {
-    setUnlocked(unlocked.filter(u => u !== id));
-    const user = users.find(u => u.id === id);
-    if (user) setUserContentHidden(user, true);
-  };
-
   // Unblock: permanently remove the user from the block list
   const unblockUser = (id: string) => {
     const updated = blocked.filter(u => u.id !== id);
     setBlocked(updated);
-    setUnlocked(unlocked.filter(u => u !== id));
     const user = users.find(u => u.id === id);
     if (user) setUserContentHidden(user, false);
     if (typeof chrome !== 'undefined' && chrome.storage) {
@@ -278,13 +249,12 @@ const Blocker: React.FC = () => {
     }
   };
 
-  // Hide content for already-blocked users on mount (unless unlocked)
+  // Hide content for already-blocked users on mount
   useEffect(() => {
     blocked.forEach(b => {
-      if (unlocked.includes(b.id)) return;
       users.filter(u => u.id === b.id).forEach(u => setUserContentHidden(u, true));
     });
-  }, [blocked, users, unlocked]);
+  }, [blocked, users]);
 
   // Insert (once) an inline container right after each user's name on the page.
   // The MUI controls are rendered into these containers via portals below.
@@ -393,15 +363,11 @@ const Blocker: React.FC = () => {
           const container = containers.get(user.id);
           if (!container) return null;
           const isBlocked = blocked.some(u => u.id === user.id);
-          const isUnlocked = unlocked.includes(user.id);
           return createPortal(
             <InlineControls
               user={user}
               isBlocked={isBlocked}
-              isUnlocked={isUnlocked}
               onBlock={() => blockUser(user.id, user.name)}
-              onUnlock={() => unlockUser(user.id)}
-              onLock={() => lockUser(user.id)}
               onUnblock={() => unblockUser(user.id)}
             />,
             container
