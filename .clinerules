@@ -23,8 +23,8 @@
 ### Git Workflow
 - Feature branches from main
 - Conventional commit messages
-- PR reviews required
-- CI must pass before merge
+- Avoid pushing after every single file save or minor 5-minute adjustment. Wait until you hit a clear milestone
+- If Feature B relies on a data layer you're rewriting in Feature A, don't push until both sides of the bridge are structurally sound.
 
 ### Documentation
 - Update CLAUDE.md for new commands
