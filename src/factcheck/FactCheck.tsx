@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Button,
@@ -10,7 +10,8 @@ import {
   Tooltip,
 } from '@mui/material';
 import FactCheckIcon from '@mui/icons-material/FactCheck';
-import { FactCheckResult, Verdict } from './prompt';
+import { FactCheckResult, Verdict, FactCheckLanguage } from './prompt';
+import { runFactCheckPipeline } from './pipeline';
 
 const VERDICT_COLOR: Record<Verdict, 'success' | 'warning' | 'default'> = {
   credible: 'success',
@@ -50,6 +51,35 @@ const FactCheck: React.FC<Props> = ({ text, enabled, onFactCheck }) => {
   const [result, setResult] = useState<FactCheckResult | null>(null);
   const [provider, setProvider] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [language, setLanguage] = useState<FactCheckLanguage>('en');
+
+  useEffect(() => {
+    if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.sync) {
+      // Initial load
+      chrome.storage.sync.get({ factCheckConfigs: [] }, (result) => {
+        const configs = result.factCheckConfigs as { language?: FactCheckLanguage }[];
+        if (configs && configs.length > 0) {
+          // Use the language of the first provider as the default
+          setLanguage(configs[0].language || 'en');
+        }
+      });
+
+      // Listen for changes
+      const listener = (changes: { [key: string]: chrome.storage.StorageChange }, area: string) => {
+        if (area === 'sync' && changes.factCheckConfigs) {
+          const newConfigs = changes.factCheckConfigs.newValue as { language?: FactCheckLanguage }[];
+          if (newConfigs && newConfigs.length > 0) {
+            setLanguage(newConfigs[0].language || 'en');
+          }
+        }
+      };
+
+      if (chrome.storage.onChanged) {
+        chrome.storage.onChanged.addListener(listener);
+        return () => chrome.storage.onChanged?.removeListener(listener);
+      }
+    }
+  }, []);
 
   const open = Boolean(anchor);
 
@@ -59,12 +89,12 @@ const FactCheck: React.FC<Props> = ({ text, enabled, onFactCheck }) => {
     setLoading(true);
     setError(null);
     try {
-      const res = await onFactCheck(text);
+        const res = await runFactCheckPipeline(text, language, onFactCheck);
       if ('error' in res) setError(res.error);
       else {
         setResult(res);
         // Surface which provider actually answered (may be a fallback).
-        setProvider((res as FactCheckResult & { provider?: string }).provider ?? null);
+        setProvider((res as any).provider ?? null);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
