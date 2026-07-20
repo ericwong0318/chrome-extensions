@@ -166,33 +166,66 @@ const Blocker: React.FC = () => {
   }, []);
 
   // Ask the background service worker to run the AI fact-check. The key never
-  // reaches the content script.
-  const runFactCheck = (text: string): Promise<FactCheckResult | { error: string }> =>
-    new Promise((resolve) => {
-      if (typeof chrome === 'undefined' || !chrome.runtime) {
+  // reaches the content script. The optional onStage callback receives live
+  // provider/model updates (and a recount flag when falling back). Each
+  // provider attempt is capped at 9s inside the background worker, which
+  // automatically retries the next configured model and falls back through the
+  // whole list; only if every provider fails do we surface an error.
+  //
+  // We use a long-lived port (chrome.runtime.connect) rather than a one-shot
+  // sendMessage, because the background streams MULTIPLE messages (a stage
+  // update per provider attempt, plus the final result/error) and a single
+  // sendResponse can only be delivered once.
+  const runFactCheck = (
+    text: string,
+    onStage?: (stage: string, isRetry: boolean) => void
+  ): Promise<FactCheckResult | { error: string }> => {
+    return new Promise<FactCheckResult | { error: string }>((resolve) => {
+      if (typeof chrome === 'undefined' || !chrome.runtime || !chrome.runtime.connect) {
         resolve({ error: 'Extension runtime unavailable.' });
         return;
       }
-      chrome.runtime.sendMessage({ action: 'factCheck', text }, (response: any) => {
-        if (chrome.runtime.lastError) {
-          resolve({ error: chrome.runtime.lastError.message || 'Fact-check failed.' });
+      const port = chrome.runtime.connect({ name: 'factCheck' });
+      let settled = false;
+      const finish = (value: FactCheckResult | { error: string }) => {
+        if (settled) return;
+        settled = true;
+        try { port.disconnect(); } catch { /* already closed */ }
+        resolve(value);
+      };
+      port.onMessage.addListener((response: any) => {
+        if (!response) {
+          finish({ error: 'No response from background.' });
           return;
         }
-        if (!response) {
-          resolve({ error: 'No response from background.' });
-          return;
+        // Streamed stage update from the background (provider/model + fallback).
+        if (response.stage) {
+          onStage?.(response.stage, !!response.isRetry);
+          return; // not the final response; keep waiting.
         }
         if (response.disabled) {
-          resolve({ error: 'No fact-check provider configured in Options.' });
+          finish({ error: 'No fact-check provider configured in Options.' });
           return;
         }
         if (response.error) {
-          resolve({ error: response.error });
+          // Background reports a definitive error only after all providers
+          // (and their per-attempt 9s windows) have been exhausted.
+          finish({ error: response.error });
           return;
         }
-        resolve(response.result as FactCheckResult);
+        finish(response.result as FactCheckResult);
       });
+      port.onDisconnect.addListener(() => {
+        if (chrome.runtime.lastError) {
+          finish({ error: chrome.runtime.lastError.message || 'Fact-check connection lost.' });
+        } else if (!settled) {
+          finish({ error: 'Fact-check connection closed before completion.' });
+        }
+      });
+      // Kick off the request by sending the text on the port.
+      port.postMessage({ text });
     });
+  };
 
   useEffect(() => {
     // Merge any newly discovered users into the existing list, keeping the

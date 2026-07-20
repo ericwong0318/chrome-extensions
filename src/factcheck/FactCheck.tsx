@@ -6,12 +6,12 @@ import {
   Popover,
   Typography,
   Divider,
-  CircularProgress,
+  LinearProgress,
   Tooltip,
 } from '@mui/material';
 import FactCheckIcon from '@mui/icons-material/FactCheck';
 import { FactCheckResult, Verdict, FactCheckLanguage } from './prompt';
-import { runFactCheckPipeline } from './pipeline';
+import { runFactCheckPipeline, MAX_FACTCHECK_MS } from './pipeline';
 
 const VERDICT_COLOR: Record<Verdict, 'success' | 'warning' | 'default'> = {
   credible: 'success',
@@ -30,7 +30,13 @@ type Props = {
   // Whether a provider is configured in Options. When false, the button is
   // disabled and explains where to set one up.
   enabled: boolean;
-  onFactCheck: (text: string) => Promise<FactCheckResult | { error: string }>;
+  // Talks to the background service worker. Accepts an onStage callback so the
+  // UI can show which provider/model is being contacted and recount its timer
+  // when the pipeline falls back to the next provider.
+  onFactCheck: (
+    text: string,
+    onStage?: (stage: string, isRetry: boolean) => void
+  ) => Promise<FactCheckResult | { error: string }>;
 };
 
 const Section: React.FC<{ title: string; body: string }> = ({ title, body }) =>
@@ -52,24 +58,34 @@ const FactCheck: React.FC<Props> = ({ text, enabled, onFactCheck }) => {
   const [provider, setProvider] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [language, setLanguage] = useState<FactCheckLanguage>('en');
+  const [progress, setProgress] = useState(0);
+  const [stage, setStage] = useState<string>('');
+  // The primary (first) configured provider, used to label the live stage.
+  const [providerInfo, setProviderInfo] = useState<{ provider?: string; model?: string } | null>(null);
+  // Per-attempt timeout (ms) from the Options page; drives the progress bar.
+  const [timeoutMs, setTimeoutMs] = useState(MAX_FACTCHECK_MS);
 
   useEffect(() => {
     if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.sync) {
       // Initial load
-      chrome.storage.sync.get({ factCheckConfigs: [] }, (result) => {
-        const configs = result.factCheckConfigs as { language?: FactCheckLanguage }[];
+      chrome.storage.sync.get({ factCheckConfigs: [], factCheckTimeoutSec: 9 }, (result) => {
+        const configs = result.factCheckConfigs as { language?: FactCheckLanguage; provider?: string; model?: string }[];
         if (configs && configs.length > 0) {
           // Use the language of the first provider as the default
           setLanguage(configs[0].language || 'en');
+          setProviderInfo({ provider: configs[0].provider, model: configs[0].model });
         }
+        const sec = Math.min(Math.max(Number(result.factCheckTimeoutSec) || 9, 1), 120);
+        setTimeoutMs(sec * 1000);
       });
 
       // Listen for changes
       const listener = (changes: { [key: string]: chrome.storage.StorageChange }, area: string) => {
         if (area === 'sync' && changes.factCheckConfigs) {
-          const newConfigs = changes.factCheckConfigs.newValue as { language?: FactCheckLanguage }[];
+          const newConfigs = changes.factCheckConfigs.newValue as { language?: FactCheckLanguage; provider?: string; model?: string }[];
           if (newConfigs && newConfigs.length > 0) {
             setLanguage(newConfigs[0].language || 'en');
+            setProviderInfo({ provider: newConfigs[0].provider, model: newConfigs[0].model });
           }
         }
       };
@@ -88,8 +104,34 @@ const FactCheck: React.FC<Props> = ({ text, enabled, onFactCheck }) => {
     if (result || error) return; // already fetched, just show popover
     setLoading(true);
     setError(null);
+    setProgress(0);
+    setStage('Starting…');
+    // Drive the progress bar from 0 -> 100 over the configured per-attempt
+    // timeout. Each fallback resets the bar (see onStage below), so every
+    // provider attempt gets its own full-duration countdown.
+    const tick = Math.max(50, Math.floor(timeoutMs / 100));
+    const timer = window.setInterval(() => {
+      setProgress((prev) => (prev >= 100 ? 100 : prev + 100 * (tick / timeoutMs)));
+    }, tick);
     try {
-        const res = await runFactCheckPipeline(text, language, onFactCheck);
+        const onStage = (s: string, isRetry: boolean) => {
+          // When a fallback to another provider happens, recount the progress
+          // bar so each attempt gets its own 9 seconds.
+          if (isRetry) {
+            setProgress(0);
+            setStage('Retrying with another provider…');
+          } else {
+            // If the provider name is known locally, show it; otherwise trust
+            // the stage string coming from the background worker.
+            if (s.startsWith('Contacting AI provider…') && providerInfo?.provider) {
+              const model = providerInfo.model ? ` (${providerInfo.model})` : '';
+              setStage(`Contacting ${providerInfo.provider}${model}…`);
+            } else {
+              setStage(s);
+            }
+          }
+        };
+        const res = await runFactCheckPipeline(text, language, onFactCheck, onStage);
       if ('error' in res) setError(res.error);
       else {
         setResult(res);
@@ -99,11 +141,17 @@ const FactCheck: React.FC<Props> = ({ text, enabled, onFactCheck }) => {
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
+      window.clearInterval(timer);
+      setProgress(100);
       setLoading(false);
     }
   };
 
-  const handleClose = () => setAnchor(null);
+  const handleClose = () => {
+    setAnchor(null);
+    setProgress(0);
+    setStage('');
+  };
 
   return (
     <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center', ml: 0.75 }}>
@@ -130,9 +178,13 @@ const FactCheck: React.FC<Props> = ({ text, enabled, onFactCheck }) => {
         slotProps={{ paper: { sx: { p: 2, maxWidth: 360, maxHeight: 420, overflowY: 'auto' } } }}
       >
         {loading && (
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <CircularProgress size={18} />
-            <Typography variant="body2">Analyzing…</Typography>
+          <Box sx={{ width: '100%', minWidth: 240 }}>
+            <Box sx={{ mb: 0.5 }}>
+              <Typography variant="body2" color="text.secondary">
+                {stage || 'Analyzing…'}
+              </Typography>
+            </Box>
+            <LinearProgress variant="determinate" value={progress} />
           </Box>
         )}
 

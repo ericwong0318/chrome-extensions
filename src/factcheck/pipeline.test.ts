@@ -39,7 +39,7 @@ describe('Fact-Check Multi-Agent Pipeline', () => {
 
     const result = await runFactCheckPipeline(rawText, 'en', onFactCheckMock);
 
-    expect(onFactCheckMock).toHaveBeenCalledWith(rawText);
+    expect(onFactCheckMock.mock.calls[0][0]).toBe(rawText);
     expect(result.verdict).toBe('credible');
     expect(result.validityVsTruth).toBe('Verified truth');
   });
@@ -50,7 +50,7 @@ describe('Fact-Check Multi-Agent Pipeline', () => {
 
     const result = await runFactCheckPipeline(rawText, 'en', onFactCheckMock);
 
-    expect(onFactCheckMock).toHaveBeenCalledWith(rawText);
+    expect(onFactCheckMock.mock.calls[0][0]).toBe(rawText);
     expect(result.verdict).toBe('unverified');
     expect(result.validityVsTruth).toBe('Failed to fetch model output');
   });

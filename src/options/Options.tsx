@@ -20,9 +20,9 @@ import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
-import { getLogs, clearLogs, LogEntry } from '../logger';
+import { getLogs, clearLogs, logError, LogEntry } from '../logger';
 import { FactCheckLanguage, LANGUAGE_LABELS } from '../factcheck/prompt';
-import { ProviderId } from '../factcheck/providers';
+import { ProviderId, callProvider } from '../factcheck/providers';
 
 type BlockedUser = { id: string; name: string };
 
@@ -80,19 +80,30 @@ const Options: React.FC = () => {
   // next one is used as a fallback.
   const [providers, setProviders] = useState<ProviderConfig[]>([]);
   const [fcSaved, setFcSaved] = useState(false);
+  // Per-attempt timeout in seconds (1–120). Each provider attempt is aborted
+  // after this long and the next provider is tried as a fallback.
+  const [timeoutSec, setTimeoutSec] = useState(9);
+  // Per-provider connection-test status keyed by provider index.
+  const [testStatus, setTestStatus] = useState<Record<number, 'testing' | 'ok' | 'fail'>>({});
+  const [testMsg, setTestMsg] = useState<Record<number, string>>({});
 
   useEffect(() => {
     if (typeof chrome !== 'undefined' && chrome.storage) {
       chrome.storage.sync.get({ zhihuBlockedUsers: [] }, (result) => {
         if (result.zhihuBlockedUsers) setBlocked(result.zhihuBlockedUsers as BlockedUser[]);
       });
-      chrome.storage.sync.get({ factCheckConfigs: null, factCheckConfig: null }, (result) => {
+      chrome.storage.sync.get(
+        { factCheckConfigs: null, factCheckConfig: null, factCheckTimeoutSec: 9 },
+        (result) => {
         const list = result.factCheckConfigs as ProviderConfig[] | null | undefined;
         const legacy = result.factCheckConfig as ProviderConfig | null | undefined;
         if (Array.isArray(list) && list.length > 0) {
           setProviders(list);
         } else if (legacy && legacy.provider) {
           setProviders([legacy]);
+        }
+        if (typeof result.factCheckTimeoutSec === 'number') {
+          setTimeoutSec(result.factCheckTimeoutSec);
         }
       });
       getLogs().then(setLogs);
@@ -103,7 +114,11 @@ const Options: React.FC = () => {
     if (typeof chrome === 'undefined' || !chrome.storage) return;
     // Persist only providers that have a provider selected.
     const toSave = providers.filter((p) => p.provider);
-    chrome.storage.sync.set({ factCheckConfigs: toSave }, () => setFcSaved(true));
+    const clamped = Math.min(Math.max(Number(timeoutSec) || 9, 1), 120);
+    chrome.storage.sync.set(
+      { factCheckConfigs: toSave, factCheckTimeoutSec: clamped },
+      () => setFcSaved(true)
+    );
   };
 
   const refreshLogs = () => {
@@ -155,6 +170,31 @@ const Options: React.FC = () => {
       [next[idx], next[target]] = [next[target], next[idx]];
       return next;
     });
+  };
+
+  // Probe a single provider config with a tiny test prompt. Failures are
+  // logged via the shared logger (see providers.ts) and surfaced inline.
+  const testProvider = async (idx: number) => {
+    const cfg = providers[idx];
+    if (!cfg || !cfg.provider) return;
+    setFcSaved(false);
+    setTestStatus((s) => ({ ...s, [idx]: 'testing' }));
+    setTestMsg((m) => ({ ...m, [idx]: '' }));
+    try {
+      const res = await callProvider('Connection test.', cfg, 9000);
+      if (res.ok) {
+        setTestStatus((s) => ({ ...s, [idx]: 'ok' }));
+        setTestMsg((m) => ({ ...m, [idx]: 'Connected successfully.' }));
+      } else {
+        setTestStatus((s) => ({ ...s, [idx]: 'fail' }));
+        setTestMsg((m) => ({ ...m, [idx]: res.error }));
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      logError(`Fact-check connection test failed for "${cfg.provider}"`, message);
+      setTestStatus((s) => ({ ...s, [idx]: 'fail' }));
+      setTestMsg((m) => ({ ...m, [idx]: message }));
+    }
   };
 
   return (
@@ -318,6 +358,27 @@ const Options: React.FC = () => {
                       </MenuItem>
                     ))}
                   </TextField>
+
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1 }}>
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      onClick={() => testProvider(idx)}
+                      disabled={!cfg.provider || testStatus[idx] === 'testing'}
+                    >
+                      {testStatus[idx] === 'testing' ? 'Testing…' : 'Test connection'}
+                    </Button>
+                    {testStatus[idx] === 'ok' && (
+                      <Typography variant="body2" color="success.main">
+                        {testMsg[idx]}
+                      </Typography>
+                    )}
+                    {testStatus[idx] === 'fail' && (
+                      <Typography variant="body2" color="error">
+                        {testMsg[idx]}
+                      </Typography>
+                    )}
+                  </Box>
                 </Stack>
               </Paper>
             ))}
@@ -332,6 +393,21 @@ const Options: React.FC = () => {
           >
             Add provider
           </Button>
+
+          <Box sx={{ mt: 2, maxWidth: 420 }}>
+            <TextField
+              label="Timeout per provider (seconds)"
+              type="number"
+              fullWidth
+              value={timeoutSec}
+              inputProps={{ min: 1, max: 120, step: 1 }}
+              helperText="Each provider attempt is aborted after this many seconds; the next provider is then tried. Range 1–120."
+              onChange={(e) => {
+                setFcSaved(false);
+                setTimeoutSec(Number(e.target.value));
+              }}
+            />
+          </Box>
 
           <Box sx={{ mt: 2 }}>
             <Button variant="contained" size="small" onClick={saveFcConfig}>

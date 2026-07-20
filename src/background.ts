@@ -45,9 +45,11 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     }
 
     if (request.action === 'factCheck') {
-      // Support both the new ordered list (factCheckConfigs) and the legacy
-      // single config (factCheckConfig) for backward compatibility.
-      chrome.storage.sync.get({ factCheckConfigs: null, factCheckConfig: null }, (result) => {
+      // Legacy one-shot path: if a port is not attached, fall back to a single
+      // sendResponse. (The content script now uses a long-lived port instead.)
+      chrome.storage.sync.get(
+        { factCheckConfigs: null, factCheckConfig: null, factCheckTimeoutSec: 9 },
+        (result) => {
         const list = result.factCheckConfigs as FactCheckConfig[] | null | undefined;
         const legacy = result.factCheckConfig as
           | { provider?: string; apiKey?: string; model?: string; baseUrl?: string; language?: string }
@@ -71,7 +73,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           return;
         }
 
-        callProviders(request.text ?? '', configs).then((res) => {
+        const timeoutSec = Math.min(Math.max(Number(result.factCheckTimeoutSec) || 9, 1), 120);
+        const timeoutMs = timeoutSec * 1000;
+
+        callProviders(request.text ?? '', configs, undefined, timeoutMs).then((res) => {
           if (res.ok) sendResponse({ result: res.result, provider: res.provider });
           else sendResponse({ error: res.error });
         });
@@ -85,3 +90,59 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     return;
   }
 });
+
+// Long-lived port for fact-check streaming. The content script connects with
+// name 'factCheck' and sends { text } as the first message; the background
+// streams stage updates (and the final result/error) back over the same port.
+// A port is required because a single sendResponse can only be called once.
+if (chrome.runtime.onConnect) {
+  chrome.runtime.onConnect.addListener((port) => {
+  if (port.name !== 'factCheck') return;
+
+  port.onMessage.addListener((msg: any) => {
+    if (!msg || typeof msg.text !== 'string') return;
+    chrome.storage.sync.get(
+      { factCheckConfigs: null, factCheckConfig: null, factCheckTimeoutSec: 9 },
+      (result) => {
+        const list = result.factCheckConfigs as FactCheckConfig[] | null | undefined;
+        const legacy = result.factCheckConfig as
+          | { provider?: string; apiKey?: string; model?: string; baseUrl?: string; language?: string }
+          | null
+          | undefined;
+
+        const configs: FactCheckConfig[] = Array.isArray(list) && list.length > 0
+          ? list
+          : legacy && legacy.provider
+            ? [{
+                provider: legacy.provider as FactCheckConfig['provider'],
+                apiKey: legacy.apiKey,
+                model: legacy.model,
+                baseUrl: legacy.baseUrl,
+                language: legacy.language as FactCheckConfig['language'],
+              }]
+            : [];
+
+        if (configs.length === 0) {
+          port.postMessage({ disabled: true });
+          return;
+        }
+
+        const timeoutSec = Math.min(Math.max(Number(result.factCheckTimeoutSec) || 9, 1), 120);
+        const timeoutMs = timeoutSec * 1000;
+
+        const onStage = (stage: string, isRetry: boolean) => {
+          try { port.postMessage({ stage, isRetry }); } catch { /* port closed */ }
+        };
+        callProviders(msg.text, configs, onStage, timeoutMs).then((res) => {
+          if (res.ok) port.postMessage({ result: res.result, provider: res.provider });
+          else port.postMessage({ error: res.error });
+        });
+      }
+    );
+  });
+
+  port.onDisconnect.addListener(() => {
+    // Port closed by the content script; nothing to clean up.
+  });
+  });
+}
