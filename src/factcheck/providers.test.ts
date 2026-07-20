@@ -265,6 +265,28 @@ describe('callProviders (fallback)', () => {
       expect(res.attempts).toHaveLength(0);
     }
   });
+
+  it('reports each provider attempt via the onStage reporter', async () => {
+    const stages: Array<{ stage: string; isRetry: boolean }> = [];
+    fetchMock
+      .mockResolvedValueOnce({ ok: false, status: 401, text: async () => 'no key' })
+      .mockResolvedValueOnce(okOpenAi('{"verdict":"credible"}'));
+    const res = await callProviders(
+      'claim',
+      [
+        { provider: 'openai', apiKey: 'bad', model: 'gpt-4o-mini' },
+        { provider: 'claude', apiKey: 'ck', model: 'claude-3' },
+      ],
+      (stage, isRetry) => stages.push({ stage, isRetry })
+    );
+    expect(res.ok).toBe(true);
+    // First attempt reported, then a fallback notice, then the second attempt.
+    expect(stages[0].stage).toContain('openai');
+    expect(stages[0].isRetry).toBe(false);
+    expect(stages[1].stage).toContain('failed');
+    expect(stages[1].isRetry).toBe(true);
+    expect(stages[2].stage).toContain('claude');
+  });
 });
 
 describe('parseResult', () => {
