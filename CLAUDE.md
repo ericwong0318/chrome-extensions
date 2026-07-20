@@ -1,1 +1,64 @@
-# Claude Commands ## Commands - `npm run dev` - Dev server with hot reload - `npm run build` - Build to `dist/` - `npm run preview` - Preview built extension - `npm test` - Run Vitest unit tests - `npm test -- path/to/file.test.ts` - Run specific test - `npm run tsc -- --noEmit` - Strict type check - `npx playwright test` - E2E tests (run `npm run build` first) ## Git Milestone & Release Rules - Only commit if fully type-safe and all tests pass - `chore:` for intermediate architectural building blocks - `feat:` when a feature is finished ## Key Files - `manifest.json` - Extension config - `vite.config.ts` - CRX build config - `src/background.ts` - Service worker - `src/content.tsx` - Content script entry - `src/blocker/Blocker.tsx` - Block UI - `src/options/Options.tsx` - Options page - `src/factcheck/FactCheck.tsx` - Fact-check UI ## Docs - `README.md` - User guide - `DEVELOPER.md` - Technical guidelines - `architecture.md` - Architecture overview
+# 🏃‍♂️ CLAUDE.md: Zhihu User Blocker (MV3)
+
+This is a **Manifest V3 Chrome Extension** built with **Vite**, **React**, **MUI 5 + Emotion**, and **TypeScript (strict)**. It blocks users on Zhihu and adds AI-powered fact-checking.
+
+## 🚀 Execution & Verification Commands
+
+Run these before considering any task done or making a commit:
+
+* **Production Build:** `npm run build` → outputs to `dist/`
+* **Local Hot Reload:** `npm run dev`
+* **Preview Built Extension:** `npm run preview`
+* **Type Safety Check:** `npx tsc --noEmit`
+* **Run Unit Tests (all):** `npm test`  *(alias for `vitest run`)*
+* **Run a Single Test File:** `npm test -- path/to/file.test.ts`
+* **Watch Mode:** `npm run test:watch`
+* **E2E Tests (Playwright):** `npx playwright test` — **run `npm run build` first**
+
+> Linting/formatting uses ESLint + Prettier configs (no `npm run lint` script yet — run via your editor or `npx eslint`).
+
+## 📐 Project Structure & Map
+
+* `manifest.json` — Extension config (MV3, permissions, content/background/options registration).
+* `vite.config.ts` — Vite + `@crxjs/vite-plugin` build config.
+* `src/background.ts` — MV3 Service Worker: message passing, `chrome.storage` handling, fact-check orchestration.
+* `src/content.tsx` — Injected content script entry (DOM observation, UI overlay via React).
+* `src/blocker/Blocker.tsx` — Block UI component.
+* `src/options/Options.tsx` — Options page (settings, blocked-user management, provider config).
+* `src/factcheck/` — AI fact-check pipeline (`FactCheck.tsx`, `pipeline.ts`, `providers.ts`, `agents/`).
+* `src/logger.ts` — Logging utility (writes to `chrome.storage.local`).
+* `e2e/` — Playwright E2E specs (`extension.spec.ts`, `server.mjs`, fixtures).
+
+## 🎨 Code Style & Conventions
+
+* **TypeScript:** Strict mode required. No implicit `any`. Define interfaces/types alongside utility modules.
+* **React:** Functional components + hooks only.
+* **UI:** MUI 5 + Emotion (`@emotion/react`, `@emotion/styled`).
+* **Imports order:** external deps → internal utils → component styles.
+* **Naming:**
+  * Files/folders: `kebab-case` (e.g. `Blocker.tsx`, `callProviders.ts`)
+  * Components: `PascalCase`
+  * Variables/functions: `camelCase`
+* **Content scripts:** No direct DOM manipulation — render via React (portals/overlays).
+* **Background scripts:** Service worker using message passing only (no DOM access).
+* **Storage rules:**
+  * `chrome.storage.sync` → user data (blocked users `zhihuBlockedUsers`, `factCheckConfigs`).
+  * `chrome.storage.local` → logs and cached data.
+* **Permissions:** Request only the minimal necessary scope.
+
+## ⚙️ Workflow & Guardrails
+
+1. **Verification Gate:** NEVER state a task is complete unless `npx tsc --noEmit` and `npm test` pass cleanly.
+2. **Tests:** New features need Vitest + React Testing Library unit tests (≥80% coverage). E2E via Playwright.
+3. **Git Workflow:**
+   * Branch feature branches off `main`.
+   * Use **Conventional Commits**: `feat:` when a feature is finished, `chore:` for intermediate architectural building blocks, `fix:` for bug fixes.
+   * Avoid pushing after every minor save — wait until a clear milestone.
+   * If Feature B depends on a data layer being rewritten in Feature A, don't push until both sides of the bridge are structurally sound.
+4. **Security:** Sanitize all user inputs, validate message origins, no `eval()`/`innerHTML` with user data, CSP-compliant.
+
+## 📚 Docs
+
+* `README.md` — User-facing guide.
+* `DEVELOPER.md` — Technical contributor guidelines.
+* `architecture.md` — Data flow, storage, message flow, provider fallback overview.
