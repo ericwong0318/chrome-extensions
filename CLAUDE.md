@@ -1,5 +1,7 @@
 # 🏃‍♂️ CLAUDE.md: Zhihu User Blocker (MV3)
 
+> **This file is the canonical source of truth for project rules.** If you switch AI tools, point the new tool at this file (or `DEVELOPER.md`). The Claude-specific `.clinerules` is just a thin shim that points here.
+
 This is a **Manifest V3 Chrome Extension** built with **Vite**, **React**, **MUI 5 + Emotion**, and **TypeScript (strict)**. It blocks users on Zhihu and adds AI-powered fact-checking.
 
 ## 🚀 Execution & Verification Commands
@@ -45,20 +47,30 @@ Run these before considering any task done or making a commit:
   * `chrome.storage.sync` → user data (blocked users `zhihuBlockedUsers`, `factCheckConfigs`).
   * `chrome.storage.local` → logs and cached data.
 * **Permissions:** Request only the minimal necessary scope.
+* **File patterns:**
+  * `*.tsx` React components, `*.test.tsx` component tests, `*.ts` utilities/types.
+  * `*.test.ts` unit tests, `*.spec.ts` E2E tests, `setup.ts` test config.
+  * Configs: `vite.config.ts`, `vitest.config.ts`, `tsconfig.json`, `manifest.json`.
+* **JSDoc:** Public APIs must have JSDoc comments.
+* **Performance:** Lazy-load non-critical components, minimize background work, efficient content-script injection, cache API responses.
+* **Error handling:** try/catch for async, graceful degradation on API failure, user-friendly messages, log for debugging.
+* **Communication (cross-context):** `chrome.runtime.sendMessage` for one-shot; port-based for long-lived; event-driven; avoid polling.
 
 ## ⚙️ Workflow & Guardrails
 
 1. **Verification Gate:** NEVER state a task is complete unless `npx tsc --noEmit` and `npm test` pass cleanly.
-2. **Tests:** New features need Vitest + React Testing Library unit tests (≥80% coverage). E2E via Playwright.
+2. **Tests:** New features need Vitest + React Testing Library unit tests (≥80% coverage). E2E via Playwright (Chromium/Firefox). Run tests before committing.
 3. **Git Workflow:**
    * Branch feature branches off `main`.
    * Use **Conventional Commits**: `feat:` when a feature is finished, `chore:` for intermediate architectural building blocks, `fix:` for bug fixes.
    * Avoid pushing after every minor save — wait until a clear milestone.
    * If Feature B depends on a data layer being rewritten in Feature A, don't push until both sides of the bridge are structurally sound.
 4. **Security:** Sanitize all user inputs, validate message origins, no `eval()`/`innerHTML` with user data, CSP-compliant.
+5. **Docs:** Keep `CLAUDE.md` (commands), `DEVELOPER.md` (architecture), and `README.md` (user changes) in sync with any modifications.
 
 ## 📚 Docs
 
 * `README.md` — User-facing guide.
 * `DEVELOPER.md` — Technical contributor guidelines.
 * `architecture.md` — Data flow, storage, message flow, provider fallback overview.
+* `.clinerules` — Claude-specific shim; points to this file for all rules.
