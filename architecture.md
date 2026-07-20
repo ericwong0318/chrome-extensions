@@ -24,6 +24,11 @@ graph TD
 5. **Response** → Background Script sends response back  
 6. **Update** → Content Script updates UI  
 
+## AI Provider Fallback
+- The Options page stores an ordered list of providers in `factCheckConfigs` (first = primary, rest = fallbacks).
+- On a `factCheck` message, the background script calls `callProviders` (in `src/factcheck/providers.ts`), which tries each provider in order and falls back to the next on any failure (missing key, HTTP error, network error).
+- The successful provider id is returned so the UI can display `via <provider>`. If all providers fail, an aggregated error lists every attempt.
+
 ## Testing
 - **Unit/Integration**: Vitest (`src/**/*.test.ts`)  
 - **End-to-End**: Playwright (`e2e/extension.spec.ts`)  

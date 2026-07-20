@@ -40,7 +40,13 @@
 
 ## Extension Specifics
 - Blocked users: `zhihuBlockedUsers` (array of {id, name})
-- Fact-check config: `factCheckConfig`
+- Fact-check config: `factCheckConfigs` (ordered array of provider configs; first = primary, rest = fallbacks). Legacy single `factCheckConfig` still read for backward compatibility.
 - Logs: `chrome.storage.local`
 - Message actions: blockUser, unblockUser, getBlockedUsers, factCheck
 - Toolbar action: opens options page via `chrome.runtime.openOptionsPage`
+
+## Fact-Check Provider Fallback
+- `src/factcheck/providers.ts` exports `callProvider` (single provider) and `callProviders` (ordered list with fallback).
+- `callProviders` tries each config in order; on any failure (missing key, HTTP error, network error) it moves to the next. If all fail, it returns an aggregated error listing every attempt.
+- The background service worker (`src/background.ts`) reads `factCheckConfigs` and calls `callProviders`, returning the successful provider id so the UI can show `via <provider>`.
+- The Options page lets the user add/remove/reorder providers (up/down buttons) to define the fallback order.

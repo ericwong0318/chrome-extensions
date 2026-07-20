@@ -150,15 +150,17 @@ const Blocker: React.FC = () => {
   const [factCheckEnabled, setFactCheckEnabled] = useState(false);
   const scanTimer = useRef<number | undefined>(undefined);
 
-  // Load fact-check provider config to enable/disable the button.
+  // Load fact-check provider config to enable/disable the button. Supports both
+  // the new ordered list (factCheckConfigs) and the legacy single config.
   useEffect(() => {
     if (typeof chrome !== 'undefined' && chrome.storage) {
-      chrome.storage.sync.get({ factCheckConfig: null }, (result) => {
-        const cfg = result.factCheckConfig as
-          | { provider?: string; apiKey?: string }
-          | null
-          | undefined;
-        setFactCheckEnabled(!!cfg && !!cfg.provider);
+      chrome.storage.sync.get({ factCheckConfigs: null, factCheckConfig: null }, (result) => {
+        const list = result.factCheckConfigs as Array<{ provider?: string }> | null | undefined;
+        const legacy = result.factCheckConfig as { provider?: string } | null | undefined;
+        const hasProviders =
+          (Array.isArray(list) && list.some((p) => p && p.provider)) ||
+          (!!legacy && !!legacy.provider);
+        setFactCheckEnabled(hasProviders);
       });
     }
   }, []);
