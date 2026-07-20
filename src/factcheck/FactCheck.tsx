@@ -48,6 +48,7 @@ const FactCheck: React.FC<Props> = ({ text, enabled, onFactCheck }) => {
   const [anchor, setAnchor] = useState<HTMLElement | null>(null);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<FactCheckResult | null>(null);
+  const [provider, setProvider] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const open = Boolean(anchor);
@@ -60,7 +61,11 @@ const FactCheck: React.FC<Props> = ({ text, enabled, onFactCheck }) => {
     try {
       const res = await onFactCheck(text);
       if ('error' in res) setError(res.error);
-      else setResult(res);
+      else {
+        setResult(res);
+        // Surface which provider actually answered (may be a fallback).
+        setProvider((res as FactCheckResult & { provider?: string }).provider ?? null);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
@@ -118,6 +123,9 @@ const FactCheck: React.FC<Props> = ({ text, enabled, onFactCheck }) => {
                 label={VERDICT_LABEL[result.verdict]}
                 color={VERDICT_COLOR[result.verdict]}
               />
+              {provider && (
+                <Chip size="small" variant="outlined" label={`via ${provider}`} />
+              )}
             </Box>
             <Divider sx={{ mb: 1.5 }} />
 

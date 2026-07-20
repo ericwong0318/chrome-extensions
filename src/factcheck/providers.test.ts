@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { callProvider } from './providers';
+import { callProvider, callProviders } from './providers';
 import { parseResult, SYSTEM_PROMPT } from './prompt';
 
 // Mock global fetch so we can assert the request shape per provider without
@@ -10,23 +10,43 @@ beforeEach(() => {
   (global as any).fetch = fetchMock;
 });
 
+// Build a successful fetch response whose JSON body is an OpenAI-style
+// chat/completions payload wrapping the given content string.
+const okOpenAi = (content: string) => ({
+  ok: true,
+  json: async () => ({ choices: [{ message: { content } }] }),
+});
+
+// Build a successful fetch response for the Claude messages shape.
+const okClaude = (content: string) => ({
+  ok: true,
+  json: async () => ({ content: [{ type: 'text', text: content }] }),
+});
+
+// Build a successful fetch response for the Gemini shape.
+const okGemini = (content: string) => ({
+  ok: true,
+  json: async () => ({ candidates: [{ content: { parts: [{ text: content }] } }] }),
+});
+
 describe('callProvider', () => {
   it('returns an error when no provider is configured', async () => {
     const res = await callProvider('some text', { provider: '' as any });
     expect(res.ok).toBe(false);
+    if (!res.ok) expect(res.attempts).toHaveLength(0);
   });
 
   it('returns an error when a cloud provider has no API key', async () => {
     const res = await callProvider('text', { provider: 'claude' });
     expect(res.ok).toBe(false);
-    if (!res.ok) expect(res.error).toMatch(/API key/i);
+    if (!res.ok) {
+      expect(res.error).toMatch(/API key/i);
+      expect(res.attempts[0].provider).toBe('claude');
+    }
   });
 
   it('posts to the Claude endpoint with the shared system prompt', async () => {
-    fetchMock.mockResolvedValue({
-      ok: true,
-      json: async () => ({ content: [{ type: 'text', text: '{"verdict":"unverified"}' }] }),
-    });
+    fetchMock.mockResolvedValue(okClaude('{"verdict":"unverified"}'));
     const res = await callProvider('claim', { provider: 'claude', apiKey: 'k', model: 'm' });
     expect(fetchMock).toHaveBeenCalledTimes(1);
     const [url, init] = fetchMock.mock.calls[0];
@@ -36,13 +56,11 @@ describe('callProvider', () => {
     expect(body.model).toBe('m');
     expect(body.system).toBe(SYSTEM_PROMPT);
     expect(res.ok).toBe(true);
+    if (res.ok) expect(res.provider).toBe('claude');
   });
 
   it('posts to the Gemini endpoint with the key in the query string', async () => {
-    fetchMock.mockResolvedValue({
-      ok: true,
-      json: async () => ({ candidates: [{ content: { parts: [{ text: '{}' }] } }] }),
-    });
+    fetchMock.mockResolvedValue(okGemini('{}'));
     await callProvider('claim', { provider: 'gemini', apiKey: 'gk', model: 'gm' });
     const [url, init] = fetchMock.mock.calls[0];
     expect(url).toContain('generativelanguage.googleapis.com');
@@ -51,10 +69,7 @@ describe('callProvider', () => {
   });
 
   it('posts to a local OpenAI-compatible server without an API key', async () => {
-    fetchMock.mockResolvedValue({
-      ok: true,
-      json: async () => ({ choices: [{ message: { content: '{"verdict":"credible"}' } }] }),
-    });
+    fetchMock.mockResolvedValue(okOpenAi('{"verdict":"credible"}'));
     const res = await callProvider('claim', { provider: 'local', model: 'llama3.1' });
     const [url, init] = fetchMock.mock.calls[0];
     expect(url).toBe('http://localhost:11434/v1/chat/completions');
@@ -63,10 +78,7 @@ describe('callProvider', () => {
   });
 
   it('posts to the Other (OpenAI-compatible) endpoint with a bearer token', async () => {
-    fetchMock.mockResolvedValue({
-      ok: true,
-      json: async () => ({ choices: [{ message: { content: '{"verdict":"misleading"}' } }] }),
-    });
+    fetchMock.mockResolvedValue(okOpenAi('{"verdict":"misleading"}'));
     await callProvider('claim', {
       provider: 'other',
       apiKey: 'ok',
@@ -79,10 +91,7 @@ describe('callProvider', () => {
   });
 
   it('posts to OpenRouter with a bearer token and default base URL', async () => {
-    fetchMock.mockResolvedValue({
-      ok: true,
-      json: async () => ({ choices: [{ message: { content: '{"verdict":"credible"}' } }] }),
-    });
+    fetchMock.mockResolvedValue(okOpenAi('{"verdict":"credible"}'));
     const res = await callProvider('claim', { provider: 'openrouter', apiKey: 'ork' });
     const [url, init] = fetchMock.mock.calls[0];
     expect(url).toBe('https://openrouter.ai/api/v1/chat/completions');
@@ -97,10 +106,7 @@ describe('callProvider', () => {
   });
 
   it('posts to OpenAI with a bearer token', async () => {
-    fetchMock.mockResolvedValue({
-      ok: true,
-      json: async () => ({ choices: [{ message: { content: '{"verdict":"credible"}' } }] }),
-    });
+    fetchMock.mockResolvedValue(okOpenAi('{"verdict":"credible"}'));
     const res = await callProvider('claim', { provider: 'openai', apiKey: 'oai' });
     const [url, init] = fetchMock.mock.calls[0];
     expect(url).toBe('https://api.openai.com/v1/chat/completions');
@@ -109,10 +115,7 @@ describe('callProvider', () => {
   });
 
   it('posts to DeepSeek with a bearer token', async () => {
-    fetchMock.mockResolvedValue({
-      ok: true,
-      json: async () => ({ choices: [{ message: { content: '{"verdict":"unverified"}' } }] }),
-    });
+    fetchMock.mockResolvedValue(okOpenAi('{"verdict":"unverified"}'));
     const res = await callProvider('claim', { provider: 'deepseek', apiKey: 'ds' });
     const [url, init] = fetchMock.mock.calls[0];
     expect(url).toBe('https://api.deepseek.com/v1/chat/completions');
@@ -166,10 +169,7 @@ describe('callProvider', () => {
   });
 
   it('includes a Simplified Chinese instruction in the prompt when language is zh-CN', async () => {
-    fetchMock.mockResolvedValue({
-      ok: true,
-      json: async () => ({ choices: [{ message: { content: '{"verdict":"credible"}' } }] }),
-    });
+    fetchMock.mockResolvedValue(okOpenAi('{"verdict":"credible"}'));
     await callProvider('claim', { provider: 'openai', apiKey: 'oai', language: 'zh-CN' });
     const [, init] = fetchMock.mock.calls[0];
     const body = JSON.parse(init.body);
@@ -178,15 +178,92 @@ describe('callProvider', () => {
   });
 
   it('includes an English instruction in the prompt when language is en', async () => {
-    fetchMock.mockResolvedValue({
-      ok: true,
-      json: async () => ({ choices: [{ message: { content: '{"verdict":"credible"}' } }] }),
-    });
+    fetchMock.mockResolvedValue(okOpenAi('{"verdict":"credible"}'));
     await callProvider('claim', { provider: 'openai', apiKey: 'oai', language: 'en' });
     const [, init] = fetchMock.mock.calls[0];
     const body = JSON.parse(init.body);
     const userMsg = body.messages.find((m: any) => m.role === 'user');
     expect(userMsg.content).toContain('in English');
+  });
+});
+
+describe('callProviders (fallback)', () => {
+  it('uses the first provider when it succeeds', async () => {
+    fetchMock.mockResolvedValue(okOpenAi('{"verdict":"credible"}'));
+    const res = await callProviders('claim', [
+      { provider: 'openai', apiKey: 'oai' },
+      { provider: 'claude', apiKey: 'ck' },
+    ]);
+    expect(res.ok).toBe(true);
+    if (res.ok) expect(res.provider).toBe('openai');
+    // Only the first provider should have been called.
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('falls back to the next provider when the first fails', async () => {
+    // First call fails with 401, second succeeds.
+    fetchMock
+      .mockResolvedValueOnce({ ok: false, status: 401, text: async () => 'unauthorized' })
+      .mockResolvedValueOnce(okClaude('{"verdict":"credible"}'));
+    const res = await callProviders('claim', [
+      { provider: 'openai', apiKey: 'bad' },
+      { provider: 'claude', apiKey: 'ck' },
+    ]);
+    expect(res.ok).toBe(true);
+    if (res.ok) expect(res.provider).toBe('claude');
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it('falls back through multiple providers and reports all attempts', async () => {
+    fetchMock
+      .mockResolvedValueOnce({ ok: false, status: 429, text: async () => 'rate' })
+      .mockResolvedValueOnce({ ok: false, status: 500, text: async () => 'boom' })
+      .mockResolvedValueOnce(okOpenAi('{"verdict":"unverified"}'));
+    const res = await callProviders('claim', [
+      { provider: 'openai', apiKey: 'oai' },
+      { provider: 'deepseek', apiKey: 'ds' },
+      { provider: 'local', model: 'llama3.1' },
+    ]);
+    expect(res.ok).toBe(true);
+    if (res.ok) expect(res.provider).toBe('local');
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+  });
+
+  it('returns an aggregated error when all providers fail', async () => {
+    fetchMock
+      .mockResolvedValueOnce({ ok: false, status: 401, text: async () => 'no key' })
+      .mockResolvedValueOnce({ ok: false, status: 500, text: async () => 'down' });
+    const res = await callProviders('claim', [
+      { provider: 'openai', apiKey: 'bad' },
+      { provider: 'claude', apiKey: 'bad' },
+    ]);
+    expect(res.ok).toBe(false);
+    if (!res.ok) {
+      expect(res.error).toMatch(/All providers failed/);
+      expect(res.attempts).toHaveLength(2);
+      expect(res.attempts[0].provider).toBe('openai');
+      expect(res.attempts[1].provider).toBe('claude');
+    }
+  });
+
+  it('skips providers with no provider selected and uses a valid one', async () => {
+    fetchMock.mockResolvedValue(okOpenAi('{"verdict":"credible"}'));
+    const res = await callProviders('claim', [
+      { provider: '' as any },
+      { provider: 'openai', apiKey: 'oai' },
+    ]);
+    expect(res.ok).toBe(true);
+    if (res.ok) expect(res.provider).toBe('openai');
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('returns a disabled-style error when no providers are configured', async () => {
+    const res = await callProviders('claim', []);
+    expect(res.ok).toBe(false);
+    if (!res.ok) {
+      expect(res.error).toMatch(/No fact-check provider configured/);
+      expect(res.attempts).toHaveLength(0);
+    }
   });
 });
 

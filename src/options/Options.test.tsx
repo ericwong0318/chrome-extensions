@@ -75,13 +75,39 @@ describe('Options (unit)', () => {
 
   it('saves the selected reply language with the fact-check config', async () => {
     render(<Options />);
+    // Add a provider first so the per-provider fields render.
+    fireEvent.click(await screen.findByText('Add provider'));
+    const providerSelect = await screen.findByLabelText('Provider');
+    fireEvent.mouseDown(providerSelect);
+    fireEvent.click(await screen.findByText('OpenAI'));
     const langSelect = await screen.findByLabelText('Reply language');
     fireEvent.mouseDown(langSelect);
     const zhTW = await screen.findByText('中文（繁體）');
     fireEvent.click(zhTW);
     fireEvent.click(screen.getByText('Save'));
 
-    const stored = (await mockChromeStorage.sync.get({ factCheckConfig: null })) as any;
-    expect(stored.factCheckConfig?.language).toBe('zh-TW');
+    const stored = (await mockChromeStorage.sync.get({ factCheckConfigs: null })) as any;
+    expect(stored.factCheckConfigs).toHaveLength(1);
+    expect(stored.factCheckConfigs[0].provider).toBe('openai');
+    expect(stored.factCheckConfigs[0].language).toBe('zh-TW');
+  });
+
+  it('persists multiple ordered providers and their fallback order', async () => {
+    render(<Options />);
+    fireEvent.click(await screen.findByText('Add provider'));
+    const providerSelect = await screen.findByLabelText('Provider');
+    fireEvent.mouseDown(providerSelect);
+    fireEvent.click(await screen.findByText('OpenAI'));
+    fireEvent.click(screen.getByText('Add provider'));
+    // The second provider select is the last "Provider" label in the document.
+    const providerSelects = await screen.findAllByLabelText('Provider');
+    fireEvent.mouseDown(providerSelects[1]);
+    fireEvent.click(await screen.findByText('Claude (Anthropic)'));
+    fireEvent.click(screen.getByText('Save'));
+
+    const stored = (await mockChromeStorage.sync.get({ factCheckConfigs: null })) as any;
+    expect(stored.factCheckConfigs).toHaveLength(2);
+    expect(stored.factCheckConfigs[0].provider).toBe('openai');
+    expect(stored.factCheckConfigs[1].provider).toBe('claude');
   });
 });

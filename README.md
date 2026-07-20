@@ -54,6 +54,7 @@ A Chrome extension that lets you block users on Zhihu by hiding all their posts.
 - Get AI analysis of posts/questions
 - See structured breakdown of arguments and credibility
 - Choose reply language (English, Traditional/Simplified Chinese)
+- **Multiple providers with fallback**: Configure several AI providers (Claude, OpenAI, Gemini, DeepSeek, OpenRouter, local/Ollama, or any OpenAI-compatible endpoint) in your preferred order. If the first provider fails (rate limit, bad key, server error, network issue), the extension automatically falls back to the next one. The result shows which provider answered (`via <provider>`).
 
 ## Tech Stack (Behind the Scenes)
 
@@ -98,14 +99,16 @@ e2e/              # End-to-end tests
 ## Testing
 
 The extension has comprehensive tests:
-- **47 test cases** across 6 files
-- **46 unit/integration tests** with Vitest
+- **53 test cases** across 6 files
+- **52 unit/integration tests** with Vitest
 - **1 end-to-end test** with Playwright
 - All tests run in CI before merging
 
 ## Storage
 
 Blocked users are stored in Chrome's sync storage under the key `zhihuBlockedUsers` as an array of user objects. This means your blocked list syncs across all Chrome devices where you're signed in.
+
+Fact-check providers are stored under the key `factCheckConfigs` as an ordered array of provider configs (each with `provider`, `apiKey`, `model`, `baseUrl`, `language`). The first entry is the primary provider; subsequent entries are fallbacks tried in order when a provider fails. A legacy single `factCheckConfig` key is still read for backward compatibility.
 
 ## Security & Privacy
 

@@ -14,24 +14,71 @@ import {
   TextField,
   MenuItem,
   Stack,
+  IconButton,
 } from '@mui/material';
+import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
+import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
+import DeleteIcon from '@mui/icons-material/Delete';
+import AddIcon from '@mui/icons-material/Add';
 import { getLogs, clearLogs, LogEntry } from '../logger';
 import { FactCheckLanguage, LANGUAGE_LABELS } from '../factcheck/prompt';
+import { ProviderId } from '../factcheck/providers';
 
 type BlockedUser = { id: string; name: string };
 
-type FactCheckConfig = {
-  provider: 'claude' | 'local' | 'gemini' | 'openai' | 'deepseek' | 'openrouter' | 'other' | '';
+type ProviderConfig = {
+  provider: ProviderId | '';
   apiKey?: string;
   model?: string;
   baseUrl?: string;
   language?: FactCheckLanguage;
 };
 
+const PROVIDER_LABELS: Record<ProviderId, string> = {
+  claude: 'Claude (Anthropic)',
+  local: 'Local (Ollama / Qwen / llama.cpp, free)',
+  gemini: 'Gemini (Google)',
+  openai: 'OpenAI',
+  deepseek: 'DeepSeek',
+  openrouter: 'OpenRouter',
+  other: 'Other (OpenAI-compatible)',
+};
+
+const PROVIDER_OPTIONS: ProviderId[] = [
+  'claude',
+  'local',
+  'gemini',
+  'openai',
+  'deepseek',
+  'openrouter',
+  'other',
+];
+
+const defaultModelFor = (provider: ProviderId | ''): string => {
+  switch (provider) {
+    case 'gemini':
+      return 'gemini-1.5-flash';
+    case 'claude':
+      return 'claude-3-5-sonnet-latest';
+    case 'openrouter':
+      return 'openai/gpt-4o-mini';
+    case 'openai':
+      return 'gpt-4o-mini';
+    case 'deepseek':
+      return 'deepseek-chat';
+    case 'local':
+      return 'llama3.1';
+    default:
+      return 'gpt-4o-mini';
+  }
+};
+
 const Options: React.FC = () => {
   const [blocked, setBlocked] = useState<BlockedUser[]>([]);
   const [logs, setLogs] = useState<LogEntry[]>([]);
-  const [fcConfig, setFcConfig] = useState<FactCheckConfig>({ provider: '' });
+  // Ordered list of providers. The first one is tried first; on failure the
+  // next one is used as a fallback.
+  const [providers, setProviders] = useState<ProviderConfig[]>([]);
   const [fcSaved, setFcSaved] = useState(false);
 
   useEffect(() => {
@@ -39,8 +86,14 @@ const Options: React.FC = () => {
       chrome.storage.sync.get({ zhihuBlockedUsers: [] }, (result) => {
         if (result.zhihuBlockedUsers) setBlocked(result.zhihuBlockedUsers as BlockedUser[]);
       });
-      chrome.storage.sync.get({ factCheckConfig: null }, (result) => {
-        if (result.factCheckConfig) setFcConfig(result.factCheckConfig as FactCheckConfig);
+      chrome.storage.sync.get({ factCheckConfigs: null, factCheckConfig: null }, (result) => {
+        const list = result.factCheckConfigs as ProviderConfig[] | null | undefined;
+        const legacy = result.factCheckConfig as ProviderConfig | null | undefined;
+        if (Array.isArray(list) && list.length > 0) {
+          setProviders(list);
+        } else if (legacy && legacy.provider) {
+          setProviders([legacy]);
+        }
       });
       getLogs().then(setLogs);
     }
@@ -48,14 +101,9 @@ const Options: React.FC = () => {
 
   const saveFcConfig = () => {
     if (typeof chrome === 'undefined' || !chrome.storage) return;
-    const toSave: FactCheckConfig = {
-      provider: fcConfig.provider,
-      apiKey: fcConfig.apiKey,
-      model: fcConfig.model,
-      baseUrl: fcConfig.baseUrl,
-      language: fcConfig.language,
-    };
-    chrome.storage.sync.set({ factCheckConfig: toSave }, () => setFcSaved(true));
+    // Persist only providers that have a provider selected.
+    const toSave = providers.filter((p) => p.provider);
+    chrome.storage.sync.set({ factCheckConfigs: toSave }, () => setFcSaved(true));
   };
 
   const refreshLogs = () => {
@@ -69,7 +117,7 @@ const Options: React.FC = () => {
   };
 
   const unblockUser = (id: string) => {
-    const updated = blocked.filter(u => u.id !== id);
+    const updated = blocked.filter((u) => u.id !== id);
     setBlocked(updated);
     if (typeof chrome !== 'undefined' && chrome.storage) {
       chrome.storage.sync.set({ zhihuBlockedUsers: updated });
@@ -81,6 +129,32 @@ const Options: React.FC = () => {
     if (typeof chrome !== 'undefined' && chrome.storage) {
       chrome.storage.sync.set({ zhihuBlockedUsers: [] });
     }
+  };
+
+  const updateProvider = (idx: number, patch: Partial<ProviderConfig>) => {
+    setFcSaved(false);
+    setProviders((prev) => prev.map((p, i) => (i === idx ? { ...p, ...patch } : p)));
+  };
+
+  const addProvider = () => {
+    setFcSaved(false);
+    setProviders((prev) => [...prev, { provider: '' }]);
+  };
+
+  const removeProvider = (idx: number) => {
+    setFcSaved(false);
+    setProviders((prev) => prev.filter((_, i) => i !== idx));
+  };
+
+  const moveProvider = (idx: number, dir: -1 | 1) => {
+    setFcSaved(false);
+    setProviders((prev) => {
+      const target = idx + dir;
+      if (target < 0 || target >= prev.length) return prev;
+      const next = [...prev];
+      [next[idx], next[target]] = [next[target], next[idx]];
+      return next;
+    });
   };
 
   return (
@@ -127,124 +201,148 @@ const Options: React.FC = () => {
           Fact Check (AI)
         </Typography>
         <Typography variant="body2" color="text.secondary" gutterBottom>
-          Send an answer or question to an AI provider for a structured analysis
-          (Validity vs. Truth, Ethos/Pathos/Logos, and informal fallacies). The API
-          key stays in chrome.storage and is only used by the background service worker.
+          Send an answer or question to one or more AI providers for a structured
+          analysis (Validity vs. Truth, Ethos/Pathos/Logos, and informal fallacies).
+          Providers are tried in the order listed below. If one fails (e.g. rate
+          limit, bad key, server error), the next provider is used as a fallback.
+          The API key stays in chrome.storage and is only used by the background
+          service worker.
         </Typography>
 
         <Box sx={{ mt: 2 }}>
-          <Stack spacing={2} maxWidth={420}>
-            <TextField
-              select
-              label="Provider"
-              value={fcConfig.provider}
-              onChange={(e) => {
-                setFcSaved(false);
-                setFcConfig({ ...fcConfig, provider: e.target.value as FactCheckConfig['provider'] });
-              }}
-            >
-              <MenuItem value="">Disabled</MenuItem>
-              <MenuItem value="claude">Claude (Anthropic)</MenuItem>
-              <MenuItem value="local">Local (Ollama / Qwen / llama.cpp, free)</MenuItem>
-              <MenuItem value="gemini">Gemini (Google)</MenuItem>
-              <MenuItem value="openai">OpenAI</MenuItem>
-              <MenuItem value="deepseek">DeepSeek</MenuItem>
-              <MenuItem value="openrouter">OpenRouter</MenuItem>
-              <MenuItem value="other">Other (OpenAI-compatible)</MenuItem>
-            </TextField>
+          {providers.length === 0 && (
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+              No providers configured. Add one to enable fact-checking.
+            </Typography>
+          )}
 
-            {fcConfig.provider === 'local' && (
-              <TextField
-                label="Base URL"
-                placeholder="http://localhost:11434/v1"
-                value={fcConfig.baseUrl || ''}
-                onChange={(e) => {
-                  setFcSaved(false);
-                  setFcConfig({ ...fcConfig, baseUrl: e.target.value });
-                }}
-              />
-            )}
+          <Stack spacing={2}>
+            {providers.map((cfg, idx) => (
+              <Paper key={idx} variant="outlined" sx={{ p: 2 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+                  <Chip
+                    size="small"
+                    color="primary"
+                    label={`#${idx + 1}${idx === 0 ? ' (primary)' : ' (fallback)'}`}
+                  />
+                  <Box>
+                    <IconButton
+                      size="small"
+                      onClick={() => moveProvider(idx, -1)}
+                      disabled={idx === 0}
+                      aria-label="Move up"
+                    >
+                      <ArrowUpwardIcon fontSize="small" />
+                    </IconButton>
+                    <IconButton
+                      size="small"
+                      onClick={() => moveProvider(idx, 1)}
+                      disabled={idx === providers.length - 1}
+                      aria-label="Move down"
+                    >
+                      <ArrowDownwardIcon fontSize="small" />
+                    </IconButton>
+                    <IconButton size="small" onClick={() => removeProvider(idx)} aria-label="Remove">
+                      <DeleteIcon fontSize="small" />
+                    </IconButton>
+                  </Box>
+                </Box>
 
-            {(fcConfig.provider === 'claude' ||
-              fcConfig.provider === 'gemini' ||
-              fcConfig.provider === 'openai' ||
-              fcConfig.provider === 'deepseek' ||
-              fcConfig.provider === 'openrouter' ||
-              fcConfig.provider === 'other') && (
-              <TextField
-                label="API Key"
-                type="password"
-                value={fcConfig.apiKey || ''}
-                onChange={(e) => {
-                  setFcSaved(false);
-                  setFcConfig({ ...fcConfig, apiKey: e.target.value });
-                }}
-              />
-            )}
+                <Stack spacing={2} maxWidth={420}>
+                  <TextField
+                    select
+                    label="Provider"
+                    value={cfg.provider}
+                    onChange={(e) => {
+                      const provider = e.target.value as ProviderConfig['provider'];
+                      // Reset model placeholder hint when provider changes.
+                      updateProvider(idx, { provider, model: cfg.model || '' });
+                    }}
+                  >
+                    <MenuItem value="">Disabled</MenuItem>
+                    {PROVIDER_OPTIONS.map((p) => (
+                      <MenuItem key={p} value={p}>
+                        {PROVIDER_LABELS[p]}
+                      </MenuItem>
+                    ))}
+                  </TextField>
 
-            {fcConfig.provider === 'other' && (
-              <TextField
-                label="Base URL"
-                placeholder="https://api.openai.com/v1"
-                value={fcConfig.baseUrl || ''}
-                onChange={(e) => {
-                  setFcSaved(false);
-                  setFcConfig({ ...fcConfig, baseUrl: e.target.value });
-                }}
-              />
-            )}
+                  {cfg.provider === 'local' && (
+                    <TextField
+                      label="Base URL"
+                      placeholder="http://localhost:11434/v1"
+                      value={cfg.baseUrl || ''}
+                      onChange={(e) => updateProvider(idx, { baseUrl: e.target.value })}
+                    />
+                  )}
 
-            <TextField
-              label="Model"
-              placeholder={
-                fcConfig.provider === 'gemini'
-                  ? 'gemini-1.5-flash'
-              : fcConfig.provider === 'claude'
-              ? 'claude-3-5-sonnet-latest'
-              : fcConfig.provider === 'openrouter'
-              ? 'openai/gpt-4o-mini'
-              : fcConfig.provider === 'openai'
-              ? 'gpt-4o-mini'
-              : fcConfig.provider === 'deepseek'
-              ? 'deepseek-chat'
-              : fcConfig.provider === 'local'
-              ? 'llama3.1'
-              : 'gpt-4o-mini'
-              }
-              value={fcConfig.model || ''}
-              onChange={(e) => {
-                setFcSaved(false);
-                setFcConfig({ ...fcConfig, model: e.target.value });
-              }}
-            />
+                  {(cfg.provider === 'claude' ||
+                    cfg.provider === 'gemini' ||
+                    cfg.provider === 'openai' ||
+                    cfg.provider === 'deepseek' ||
+                    cfg.provider === 'openrouter' ||
+                    cfg.provider === 'other') && (
+                    <TextField
+                      label="API Key"
+                      type="password"
+                      value={cfg.apiKey || ''}
+                      onChange={(e) => updateProvider(idx, { apiKey: e.target.value })}
+                    />
+                  )}
 
-            <TextField
-              select
-              label="Reply language"
-              value={fcConfig.language || 'en'}
-              onChange={(e) => {
-                setFcSaved(false);
-                setFcConfig({ ...fcConfig, language: e.target.value as FactCheckLanguage });
-              }}
-            >
-              {(Object.keys(LANGUAGE_LABELS) as FactCheckLanguage[]).map((lang) => (
-                <MenuItem key={lang} value={lang}>
-                  {LANGUAGE_LABELS[lang]}
-                </MenuItem>
-              ))}
-            </TextField>
+                  {cfg.provider === 'other' && (
+                    <TextField
+                      label="Base URL"
+                      placeholder="https://api.openai.com/v1"
+                      value={cfg.baseUrl || ''}
+                      onChange={(e) => updateProvider(idx, { baseUrl: e.target.value })}
+                    />
+                  )}
 
-            <Box>
-              <Button variant="contained" size="small" onClick={saveFcConfig}>
-                Save
-              </Button>
-              {fcSaved && (
-                <Typography variant="body2" color="success.main" sx={{ ml: 1, display: 'inline' }}>
-                  Saved.
-                </Typography>
-              )}
-            </Box>
+                  <TextField
+                    label="Model"
+                    placeholder={defaultModelFor(cfg.provider)}
+                    value={cfg.model || ''}
+                    onChange={(e) => updateProvider(idx, { model: e.target.value })}
+                  />
+
+                  <TextField
+                    select
+                    label="Reply language"
+                    value={cfg.language || 'en'}
+                    onChange={(e) => updateProvider(idx, { language: e.target.value as FactCheckLanguage })}
+                  >
+                    {(Object.keys(LANGUAGE_LABELS) as FactCheckLanguage[]).map((lang) => (
+                      <MenuItem key={lang} value={lang}>
+                        {LANGUAGE_LABELS[lang]}
+                      </MenuItem>
+                    ))}
+                  </TextField>
+                </Stack>
+              </Paper>
+            ))}
           </Stack>
+
+          <Button
+            variant="outlined"
+            size="small"
+            startIcon={<AddIcon />}
+            onClick={addProvider}
+            sx={{ mt: 2 }}
+          >
+            Add provider
+          </Button>
+
+          <Box sx={{ mt: 2 }}>
+            <Button variant="contained" size="small" onClick={saveFcConfig}>
+              Save
+            </Button>
+            {fcSaved && (
+              <Typography variant="body2" color="success.main" sx={{ ml: 1, display: 'inline' }}>
+                Saved.
+              </Typography>
+            )}
+          </Box>
         </Box>
 
         <Divider sx={{ my: 3 }} />

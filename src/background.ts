@@ -1,5 +1,5 @@
 import { logError } from './logger';
-import { callProvider } from './factcheck/providers';
+import { callProviders, FactCheckConfig } from './factcheck/providers';
 
 export {};
 
@@ -45,23 +45,34 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     }
 
     if (request.action === 'factCheck') {
-      chrome.storage.sync.get({ factCheckConfig: null }, (result) => {
-        const cfg = result.factCheckConfig as
+      // Support both the new ordered list (factCheckConfigs) and the legacy
+      // single config (factCheckConfig) for backward compatibility.
+      chrome.storage.sync.get({ factCheckConfigs: null, factCheckConfig: null }, (result) => {
+        const list = result.factCheckConfigs as FactCheckConfig[] | null | undefined;
+        const legacy = result.factCheckConfig as
           | { provider?: string; apiKey?: string; model?: string; baseUrl?: string; language?: string }
           | null
           | undefined;
-        if (!cfg || !cfg.provider) {
+
+        const configs: FactCheckConfig[] = Array.isArray(list) && list.length > 0
+          ? list
+          : legacy && legacy.provider
+            ? [{
+                provider: legacy.provider as FactCheckConfig['provider'],
+                apiKey: legacy.apiKey,
+                model: legacy.model,
+                baseUrl: legacy.baseUrl,
+                language: legacy.language as FactCheckConfig['language'],
+              }]
+            : [];
+
+        if (configs.length === 0) {
           sendResponse({ disabled: true });
           return;
         }
-        callProvider(request.text ?? '', {
-          provider: cfg.provider as any,
-          apiKey: cfg.apiKey,
-          model: cfg.model,
-          baseUrl: cfg.baseUrl,
-          language: cfg.language as any,
-        }).then((res) => {
-          if (res.ok) sendResponse({ result: res.result });
+
+        callProviders(request.text ?? '', configs).then((res) => {
+          if (res.ok) sendResponse({ result: res.result, provider: res.provider });
           else sendResponse({ error: res.error });
         });
       });
