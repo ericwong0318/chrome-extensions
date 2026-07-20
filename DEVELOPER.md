@@ -37,6 +37,7 @@
 3. Background scripts: Service worker with message passing only
 4. Storage: `chrome.storage.sync` for user data, `chrome.storage.local` for logs
 5. Security: Sanitize inputs, validate message origins, CSP compliance
+6. **File Length Limit:** No single `.ts`/`.tsx` file may exceed **250 lines**. When a file reaches capacity, extract logical modules into sub-files (e.g. `src/factcheck/agents/`). This keeps modules readable and reviewable.
 
 ## Extension Specifics
 - Blocked users: `zhihuBlockedUsers` (array of {id, name})

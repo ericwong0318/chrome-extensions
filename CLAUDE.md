@@ -4,6 +4,12 @@
 
 This is a **Manifest V3 Chrome Extension** built with **Vite**, **React**, **MUI 5 + Emotion**, and **TypeScript (strict)**. It blocks users on Zhihu and adds AI-powered fact-checking.
 
+## 🧭 How to use these docs (session flow)
+
+1. **Session starts** → Read this file (`CLAUDE.md`) to learn the build/test commands and project conventions.
+2. **Building a feature** → Reference `DEVELOPER.md` for the architecture, file-length limit (250 lines/file), and module boundaries.
+3. **Task verification** → Run the `npm test` and `tsc` commands you learned from this file before declaring done.
+
 ## 🚀 Execution & Verification Commands
 
 Run these before considering any task done or making a commit:
@@ -11,7 +17,7 @@ Run these before considering any task done or making a commit:
 * **Production Build:** `npm run build` → outputs to `dist/`
 * **Local Hot Reload:** `npm run dev`
 * **Preview Built Extension:** `npm run preview`
-* **Type Safety Check:** `npx tsc --noEmit`
+* **Type Safety Check:** `npx tsc --noEmit`  *(referenced as `tsc` in the verification flow)*
 * **Run Unit Tests (all):** `npm test`  *(alias for `vitest run`)*
 * **Run a Single Test File:** `npm test -- path/to/file.test.ts`
 * **Watch Mode:** `npm run test:watch`
@@ -32,6 +38,8 @@ Run these before considering any task done or making a commit:
 * `e2e/` — Playwright E2E specs (`extension.spec.ts`, `server.mjs`, fixtures).
 
 ## 🎨 Code Style & Conventions
+
+> For architecture details, module boundaries, and the **250-line file limit**, see `DEVELOPER.md`.
 
 * **TypeScript:** Strict mode required. No implicit `any`. Define interfaces/types alongside utility modules.
 * **React:** Functional components + hooks only.
