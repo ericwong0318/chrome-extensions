@@ -1,75 +1,11 @@
 # Cline Rules
 
-## Behavior Rules
+**All project rules, conventions, commands, and git/security workflow live in `CLAUDE.md`** — that file is the canonical, AI-portable source of truth. Read it first and follow it.
 
-### Code Quality
-- Always use TypeScript strict mode
-- Follow React functional component patterns
-- Use ESLint and Prettier configurations
-- Write unit tests for new features
+This file only adds Claude-specific behavioral notes beyond what `CLAUDE.md` covers:
 
-### Extension Development
-- Background scripts: Use message passing only
-- Content scripts: No direct DOM manipulation
-- Manifest V3 compliance required
-- Permissions: Minimal necessary scope
-
-### Testing
-- Unit tests: Vitest with React Testing Library
-- E2E tests: Playwright with Chrome/Firefox
-- Test coverage: Minimum 80% for new code
-- Run tests before committing
-
-### Git Workflow
-- Feature branches from main
-- Conventional commit messages
-- Avoid pushing after every single file save or minor 5-minute adjustment. Wait until you hit a clear milestone
-- If Feature B relies on a data layer you're rewriting in Feature A, don't push until both sides of the bridge are structurally sound.
-
-### Documentation
-- Update CLAUDE.md for new commands
-- Update DEVELOPER.md for architecture changes
-- JSDoc for public APIs
-- README for user-facing changes
-
-### Performance
-- Lazy load non-critical components
-- Minimize background script work
-- Use efficient content script injection
-- Cache API responses when possible
-
-### Security
-- Sanitize all user inputs
-- Validate message origins
-- No eval() or innerHTML with user data
-- Content Security Policy compliance
-
-## File Patterns
-
-### Component Files
-- `*.tsx` for React components
-- `*.test.tsx` for component tests
-- `*.ts` for utilities and types
-
-### Test Files
-- `*.test.ts` for unit tests
-- `*.spec.ts` for E2E tests
-- `setup.ts` for test configuration
-
-### Configuration
-- `vite.config.ts` for build
-- `vitest.config.ts` for testing
-- `tsconfig.json` for TypeScript
-- `manifest.json` for extension
-
-## Error Handling
-- Try/catch for async operations
-- Graceful degradation for API failures
-- User-friendly error messages
-- Logging for debugging
-
-## Communication
-- Use chrome.runtime.sendMessage for cross-context
-- Port-based for long-lived connections
-- Event-driven architecture
-- Avoid polling when possible
+## Claude-Specific Behavior
+- When the user asks for a change, prefer editing files directly with the provided tools over suggesting shell commands they must run manually.
+- Do not push to remote after every minor save; wait for a clear milestone (also stated in `CLAUDE.md`).
+- If a task depends on a data layer being rewritten elsewhere, don't push until both sides are structurally sound.
+- Keep `CLAUDE.md` in sync if you add new commands or rules.
