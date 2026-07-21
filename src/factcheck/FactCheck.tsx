@@ -33,10 +33,10 @@ type Props = {
   // Talks to the background service worker. Accepts an onStage callback so the
   // UI can show which provider/model is being contacted and recount its timer
   // when the pipeline falls back to the next provider.
-  onFactCheck: (
-    text: string,
-    onStage?: (stage: string, isRetry: boolean) => void
-  ) => Promise<FactCheckResult | { error: string }>;
+    onFactCheck: (
+      text: string,
+      onStage?: (stage: string, isRetry?: boolean) => void
+    ) => Promise<FactCheckResult | { error: string }>;
 };
 
 const Section: React.FC<{ title: string; body: string }> = ({ title, body }) =>
@@ -114,7 +114,7 @@ const FactCheck: React.FC<Props> = ({ text, enabled, onFactCheck }) => {
       setProgress((prev) => (prev >= 100 ? 100 : prev + 100 * (tick / timeoutMs)));
     }, tick);
     try {
-        const onStage = (s: string, isRetry: boolean) => {
+        const onStage = (s: string, isRetry?: boolean) => {
           // When a fallback to another provider happens, recount the progress
           // bar so each attempt gets its own 9 seconds.
           if (isRetry) {
@@ -132,7 +132,11 @@ const FactCheck: React.FC<Props> = ({ text, enabled, onFactCheck }) => {
           }
         };
         const res = await runFactCheckPipeline(text, language, onFactCheck, onStage);
-      if ('error' in res) setError(res.error);
+      if ('error' in res && typeof res.error === 'string') {
+        setError(res.error);
+      } else if ('error' in res) {
+        setError(String(res.error));
+      }
       else {
         setResult(res);
         // Surface which provider actually answered (may be a fallback).
