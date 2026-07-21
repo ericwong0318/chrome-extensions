@@ -73,6 +73,31 @@ const defaultModelFor = (provider: ProviderId | ''): string => {
   }
 };
 
+const providerValidationError = (cfg: ProviderConfig): string => {
+  if (!cfg.provider) return '';
+
+  if (cfg.provider === 'local') {
+    if (!cfg.baseUrl?.trim()) {
+      return 'Base URL is required for local providers.';
+    }
+  } else if (cfg.provider === 'other') {
+    if (!cfg.apiKey?.trim()) {
+      return 'API key is required for this provider.';
+    }
+    if (!cfg.baseUrl?.trim()) {
+      return 'Base URL is required for this provider.';
+    }
+  } else {
+    if (!cfg.apiKey?.trim()) {
+      return 'API key is required for this provider.';
+    }
+  }
+
+  return '';
+};
+
+const isProviderConfigValid = (cfg: ProviderConfig): boolean => !providerValidationError(cfg);
+
 const Options: React.FC = () => {
   const [blocked, setBlocked] = useState<BlockedUser[]>([]);
   const [logs, setLogs] = useState<LogEntry[]>([]);
@@ -257,138 +282,146 @@ const Options: React.FC = () => {
           )}
 
           <Stack spacing={2}>
-            {providers.map((cfg, idx) => (
-              <Paper key={idx} variant="outlined" sx={{ p: 2 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
-                  <Chip
-                    size="small"
-                    color="primary"
-                    label={`#${idx + 1}${idx === 0 ? ' (primary)' : ' (fallback)'}`}
-                  />
-                  <Box>
-                    <IconButton
+            {providers.map((cfg, idx) => {
+              const validationError = providerValidationError(cfg);
+              return (
+                <Paper key={idx} variant="outlined" sx={{ p: 2 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+                    <Chip
                       size="small"
-                      onClick={() => moveProvider(idx, -1)}
-                      disabled={idx === 0}
-                      aria-label="Move up"
-                    >
-                      <ArrowUpwardIcon fontSize="small" />
-                    </IconButton>
-                    <IconButton
-                      size="small"
-                      onClick={() => moveProvider(idx, 1)}
-                      disabled={idx === providers.length - 1}
-                      aria-label="Move down"
-                    >
-                      <ArrowDownwardIcon fontSize="small" />
-                    </IconButton>
-                    <IconButton size="small" onClick={() => removeProvider(idx)} aria-label="Remove">
-                      <DeleteIcon fontSize="small" />
-                    </IconButton>
+                      color="primary"
+                      label={`#${idx + 1}${idx === 0 ? ' (primary)' : ' (fallback)'}`}
+                    />
+                    <Box>
+                      <IconButton
+                        size="small"
+                        onClick={() => moveProvider(idx, -1)}
+                        disabled={idx === 0}
+                        aria-label="Move up"
+                      >
+                        <ArrowUpwardIcon fontSize="small" />
+                      </IconButton>
+                      <IconButton
+                        size="small"
+                        onClick={() => moveProvider(idx, 1)}
+                        disabled={idx === providers.length - 1}
+                        aria-label="Move down"
+                      >
+                        <ArrowDownwardIcon fontSize="small" />
+                      </IconButton>
+                      <IconButton size="small" onClick={() => removeProvider(idx)} aria-label="Remove">
+                        <DeleteIcon fontSize="small" />
+                      </IconButton>
+                    </Box>
                   </Box>
-                </Box>
 
-                <Stack spacing={2} maxWidth={420}>
-                  <TextField
-                    select
-                    label="Provider"
-                    value={cfg.provider}
-                    onChange={(e) => {
-                      const provider = e.target.value as ProviderConfig['provider'];
-                      // Reset model placeholder hint when provider changes.
-                      updateProvider(idx, { provider, model: cfg.model || '' });
-                    }}
-                  >
-                    <MenuItem value="">Disabled</MenuItem>
-                    {PROVIDER_OPTIONS.map((p) => (
-                      <MenuItem key={p} value={p}>
-                        {PROVIDER_LABELS[p]}
-                      </MenuItem>
-                    ))}
-                  </TextField>
+                  <Stack spacing={2} maxWidth={420}>
+                    <TextField
+                      select
+                      label="Provider"
+                      value={cfg.provider}
+                      onChange={(e) => {
+                        const provider = e.target.value as ProviderConfig['provider'];
+                        // Reset model placeholder hint when provider changes.
+                        updateProvider(idx, { provider, model: cfg.model || '' });
+                      }}
+                    >
+                      <MenuItem value="">Disabled</MenuItem>
+                      {PROVIDER_OPTIONS.map((p) => (
+                        <MenuItem key={p} value={p}>
+                          {PROVIDER_LABELS[p]}
+                        </MenuItem>
+                      ))}
+                    </TextField>
 
-                  {cfg.provider === 'local' && (
-                    <>
+                    {cfg.provider === 'local' && (
+                      <>
+                        <TextField
+                          label="Base URL"
+                          placeholder="http://127.0.0.1:11434/v1"
+                          value={cfg.baseUrl || ''}
+                          onChange={(e) => updateProvider(idx, { baseUrl: e.target.value })}
+                        />
+                        <Typography variant="body2" color="text.secondary" sx={{ mt: -1, mb: 1 }}>
+                          For Ollama: allow CORS from the extension by running
+                          <code style={{ marginLeft: '4px', fontFamily: 'monospace' }}>{'launchctl setenv OLLAMA_ORIGINS "*"'}</code>
+                          (macOS) or set <code style={{ marginLeft: '4px', fontFamily: 'monospace' }}>{'OLLAMA_ORIGINS=*'}</code> in your environment.
+                        </Typography>
+                      </>
+                    )}
+
+                    {(cfg.provider === 'claude' ||
+                      cfg.provider === 'gemini' ||
+                      cfg.provider === 'openai' ||
+                      cfg.provider === 'deepseek' ||
+                      cfg.provider === 'openrouter' ||
+                      cfg.provider === 'other') && (
+                      <TextField
+                        label="API Key"
+                        type="password"
+                        value={cfg.apiKey || ''}
+                        onChange={(e) => updateProvider(idx, { apiKey: e.target.value })}
+                      />
+                    )}
+
+                    {cfg.provider === 'other' && (
                       <TextField
                         label="Base URL"
-                        placeholder="http://127.0.0.1:11434/v1"
+                        placeholder="https://api.openai.com/v1"
                         value={cfg.baseUrl || ''}
                         onChange={(e) => updateProvider(idx, { baseUrl: e.target.value })}
                       />
-                      <Typography variant="body2" color="text.secondary" sx={{ mt: -1, mb: 1 }}>
-                        For Ollama: allow CORS from the extension by running
-                        <code style={{ marginLeft: '4px', fontFamily: 'monospace' }}>{'launchctl setenv OLLAMA_ORIGINS "*"'}</code>
-                        (macOS) or set <code style={{ marginLeft: '4px', fontFamily: 'monospace' }}>{'OLLAMA_ORIGINS=*'}</code> in your environment.
-                      </Typography>
-                    </>
-                  )}
+                    )}
 
-                  {(cfg.provider === 'claude' ||
-                    cfg.provider === 'gemini' ||
-                    cfg.provider === 'openai' ||
-                    cfg.provider === 'deepseek' ||
-                    cfg.provider === 'openrouter' ||
-                    cfg.provider === 'other') && (
                     <TextField
-                      label="API Key"
-                      type="password"
-                      value={cfg.apiKey || ''}
-                      onChange={(e) => updateProvider(idx, { apiKey: e.target.value })}
+                      label="Model"
+                      placeholder={defaultModelFor(cfg.provider)}
+                      value={cfg.model || ''}
+                      onChange={(e) => updateProvider(idx, { model: e.target.value })}
                     />
-                  )}
 
-                  {cfg.provider === 'other' && (
                     <TextField
-                      label="Base URL"
-                      placeholder="https://api.openai.com/v1"
-                      value={cfg.baseUrl || ''}
-                      onChange={(e) => updateProvider(idx, { baseUrl: e.target.value })}
-                    />
-                  )}
-
-                  <TextField
-                    label="Model"
-                    placeholder={defaultModelFor(cfg.provider)}
-                    value={cfg.model || ''}
-                    onChange={(e) => updateProvider(idx, { model: e.target.value })}
-                  />
-
-                  <TextField
-                    select
-                    label="Reply language"
-                    value={cfg.language || 'en'}
-                    onChange={(e) => updateProvider(idx, { language: e.target.value as FactCheckLanguage })}
-                  >
-                    {(Object.keys(LANGUAGE_LABELS) as FactCheckLanguage[]).map((lang) => (
-                      <MenuItem key={lang} value={lang}>
-                        {LANGUAGE_LABELS[lang]}
-                      </MenuItem>
-                    ))}
-                  </TextField>
-
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1 }}>
-                    <Button
-                      variant="outlined"
-                      size="small"
-                      onClick={() => testProvider(idx)}
-                      disabled={!cfg.provider || testStatus[idx] === 'testing'}
+                      select
+                      label="Reply language"
+                      value={cfg.language || 'en'}
+                      onChange={(e) => updateProvider(idx, { language: e.target.value as FactCheckLanguage })}
                     >
-                      {testStatus[idx] === 'testing' ? 'Testing…' : 'Test connection'}
-                    </Button>
-                    {testStatus[idx] === 'ok' && (
-                      <Typography variant="body2" color="success.main">
-                        {testMsg[idx]}
-                      </Typography>
-                    )}
-                    {testStatus[idx] === 'fail' && (
+                      {(Object.keys(LANGUAGE_LABELS) as FactCheckLanguage[]).map((lang) => (
+                        <MenuItem key={lang} value={lang}>
+                          {LANGUAGE_LABELS[lang]}
+                        </MenuItem>
+                      ))}
+                    </TextField>
+
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1 }}>
+                      <Button
+                        variant="outlined"
+                        size="small"
+                        onClick={() => testProvider(idx)}
+                        disabled={!cfg.provider || testStatus[idx] === 'testing'}
+                      >
+                        {testStatus[idx] === 'testing' ? 'Testing…' : 'Test connection'}
+                      </Button>
+                      {testStatus[idx] === 'ok' && (
+                        <Typography variant="body2" color="success.main">
+                          {testMsg[idx]}
+                        </Typography>
+                      )}
+                      {testStatus[idx] === 'fail' && (
+                        <Typography variant="body2" color="error">
+                          {testMsg[idx]}
+                        </Typography>
+                      )}
+                    </Box>
+                    {validationError && (
                       <Typography variant="body2" color="error">
-                        {testMsg[idx]}
+                        {validationError}
                       </Typography>
                     )}
-                  </Box>
-                </Stack>
-              </Paper>
-            ))}
+                  </Stack>
+                </Paper>
+              );
+            })}
           </Stack>
 
           <Button
@@ -417,7 +450,12 @@ const Options: React.FC = () => {
           </Box>
 
           <Box sx={{ mt: 2 }}>
-            <Button variant="contained" size="small" onClick={saveFcConfig}>
+            <Button
+              variant="contained"
+              size="small"
+              onClick={saveFcConfig}
+              disabled={providers.every((cfg) => !cfg.provider)}
+            >
               Save
             </Button>
             {fcSaved && (
