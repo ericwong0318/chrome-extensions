@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, waitFor, cleanup } from '@testing-library/react';
+import { act, render, screen, fireEvent, waitFor, cleanup } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import Blocker from './Blocker';
 import { mockChromeStorage } from '../test/setup';
@@ -132,6 +132,30 @@ describe('Blocker (unit)', () => {
     expect(listItem.contains(container)).toBe(true);
     // The Block button is also present next to the author link.
     expect(link.nextElementSibling).toBe(blockContainer);
+  });
+
+  it('re-enables Fact Check when provider config is added via storage change', async () => {
+    const { link } = seedAnswerDom();
+
+    await mockChromeStorage.sync.set({
+      factCheckConfigs: null,
+      factCheckConfig: null,
+    });
+
+    render(<Blocker />);
+
+    const factCheckBtn = await waitFor(() => screen.getByText('Fact Check')) as HTMLButtonElement;
+    expect(factCheckBtn).toBeDisabled();
+
+    const newConfig = [{ provider: 'openai', apiKey: 'abc', model: 'gpt-4o-mini', language: 'en' }];
+    await mockChromeStorage.sync.set({ factCheckConfigs: newConfig });
+    act(() => {
+      mockChromeStorage.triggerOnChanged({
+        factCheckConfigs: { oldValue: null, newValue: newConfig },
+      });
+    });
+
+    await waitFor(() => expect(screen.getByText('Fact Check')).toBeEnabled());
   });
 
   it('renders exactly one Fact Check button for a collapsed answer with multiple matching content selectors', async () => {

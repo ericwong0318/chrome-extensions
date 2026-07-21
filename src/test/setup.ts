@@ -3,6 +3,7 @@ import { beforeEach } from 'vitest';
 
 // Mock chrome.storage for tests (both sync and local share the same store)
 const store: Record<string, any> = {};
+const changeListeners: Array<(changes: Record<string, any>, areaName: string) => void> = [];
 
 const makeArea = () => ({
   get: (keys: any, cb?: (result: any) => void) => {
@@ -22,12 +23,27 @@ const makeArea = () => ({
   },
 });
 
+const onChanged = {
+  addListener: (listener: typeof changeListeners[number]) => {
+    changeListeners.push(listener);
+  },
+  removeListener: (listener: typeof changeListeners[number]) => {
+    const index = changeListeners.indexOf(listener);
+    if (index !== -1) changeListeners.splice(index, 1);
+  },
+};
+
 export const mockChromeStorage = {
   sync: makeArea(),
   local: makeArea(),
+  onChanged,
+  triggerOnChanged: (changes: Record<string, any>, areaName = 'sync') => {
+    changeListeners.slice().forEach((listener) => listener(changes, areaName));
+  },
 };
 
 beforeEach(() => {
   for (const k of Object.keys(store)) delete store[k];
+  changeListeners.length = 0;
   (global as any).chrome = { storage: mockChromeStorage };
 });
