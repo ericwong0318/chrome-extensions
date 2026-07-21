@@ -4,6 +4,7 @@ import { Box, Button, ThemeProvider, createTheme } from '@mui/material';
 import { logError } from '../logger';
 import FactCheck from '../factcheck/FactCheck';
 import { FactCheckResult } from '../factcheck/prompt';
+import { normalizeFactCheckConfigs } from '../factcheck/storage';
 
 type BlockedUser = { id: string; name: string };
 type ZhihuUser = { name: string; id: string; element: HTMLElement };
@@ -155,12 +156,9 @@ const Blocker: React.FC = () => {
   useEffect(() => {
     if (typeof chrome !== 'undefined' && chrome.storage) {
       chrome.storage.sync.get({ factCheckConfigs: null, factCheckConfig: null }, (result) => {
-        const list = result.factCheckConfigs as Array<{ provider?: string }> | null | undefined;
-        const legacy = result.factCheckConfig as { provider?: string } | null | undefined;
-        const hasProviders =
-          (Array.isArray(list) && list.some((p) => p && p.provider)) ||
-          (!!legacy && !!legacy.provider);
-        setFactCheckEnabled(hasProviders);
+        setFactCheckEnabled(
+          normalizeFactCheckConfigs(result.factCheckConfigs, result.factCheckConfig).length > 0
+        );
       });
     }
   }, []);
