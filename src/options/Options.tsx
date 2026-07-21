@@ -308,12 +308,19 @@ const Options: React.FC = () => {
                   </TextField>
 
                   {cfg.provider === 'local' && (
-                    <TextField
-                      label="Base URL"
-                      placeholder="http://localhost:11434/v1"
-                      value={cfg.baseUrl || ''}
-                      onChange={(e) => updateProvider(idx, { baseUrl: e.target.value })}
-                    />
+                    <>
+                      <TextField
+                        label="Base URL"
+                        placeholder="http://127.0.0.1:11434/v1"
+                        value={cfg.baseUrl || ''}
+                        onChange={(e) => updateProvider(idx, { baseUrl: e.target.value })}
+                      />
+                      <Typography variant="body2" color="text.secondary" sx={{ mt: -1, mb: 1 }}>
+                        For Ollama: allow CORS from the extension by running
+                        <code style={{ ml: 1, fontFamily: 'monospace' }}>{'launchctl setenv OLLAMA_ORIGINS "*"'}</code>
+                        (macOS) or set <code style={{ ml: 1, fontFamily: 'monospace' }}>{'OLLAMA_ORIGINS=*'}</code> in your environment.
+                      </Typography>
+                    </>
                   )}
 
                   {(cfg.provider === 'claude' ||
