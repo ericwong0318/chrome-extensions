@@ -71,42 +71,59 @@ const FactCheck: React.FC<Props> = ({ text, enabled, onFactCheck }) => {
   const [timeoutMs, setTimeoutMs] = useState(MAX_FACTCHECK_MS);
 
   useEffect(() => {
-    if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.sync) {
-      // Initial load
-      chrome.storage.sync.get(
-        { factCheckConfigs: null, factCheckConfig: null, factCheckTimeoutSec: 9 },
-        (result) => {
-          const configs = normalizeFactCheckConfigs(result.factCheckConfigs, result.factCheckConfig);
-          if (configs.length > 0) {
-            setLanguage(configs[0].language || 'en');
-            setProviderInfo({ provider: configs[0].provider, model: configs[0].model });
-          }
-          const sec = Math.min(Math.max(Number(result.factCheckTimeoutSec) || 9, 1), 120);
-          setTimeoutMs(sec * 1000);
-        }
-      );
+    if (typeof chrome === 'undefined' || !chrome.storage || !chrome.storage.sync) return;
 
-      // Listen for changes
-      const listener = (changes: { [key: string]: chrome.storage.StorageChange }, area: string) => {
-        if (area !== 'sync') return;
-
-        if (changes.factCheckConfigs || changes.factCheckConfig) {
-          const stored = {
-            factCheckConfigs: changes.factCheckConfigs?.newValue ?? null,
-            factCheckConfig: changes.factCheckConfig?.newValue ?? null,
-          };
-          const newConfigs = normalizeFactCheckConfigs(stored.factCheckConfigs, stored.factCheckConfig);
-          if (newConfigs.length > 0) {
-            setLanguage(newConfigs[0].language || 'en');
-            setProviderInfo({ provider: newConfigs[0].provider, model: newConfigs[0].model });
-          }
-        }
-      };
-
-      if (chrome.storage.onChanged) {
-        chrome.storage.onChanged.addListener(listener);
-        return () => chrome.storage.onChanged?.removeListener(listener);
+    const applyProviderConfig = (stored: {
+      factCheckConfigs: unknown | null;
+      factCheckConfig: unknown | null;
+    }) => {
+      const configs = normalizeFactCheckConfigs(stored.factCheckConfigs, stored.factCheckConfig);
+      if (configs.length > 0) {
+        setLanguage(configs[0].language || 'en');
+        setProviderInfo({ provider: configs[0].provider, model: configs[0].model });
+      } else {
+        setLanguage('en');
+        setProviderInfo(null);
       }
+    };
+
+    const applyTimeout = (value: unknown) => {
+      const sec = Math.min(Math.max(Number(value) || 9, 1), 120);
+      setTimeoutMs(sec * 1000);
+    };
+
+    chrome.storage.sync.get(
+      { factCheckConfigs: null, factCheckConfig: null, factCheckTimeoutSec: 9 },
+      (result: {
+        factCheckConfigs: unknown | null;
+        factCheckConfig: unknown | null;
+        factCheckTimeoutSec: unknown;
+      }) => {
+        applyProviderConfig(result);
+        applyTimeout(result.factCheckTimeoutSec);
+      }
+    );
+
+    const listener = (changes: { [key: string]: chrome.storage.StorageChange }, area: string) => {
+      if (area !== 'sync') return;
+
+      if (changes.factCheckConfigs || changes.factCheckConfig) {
+        const stored = {
+          factCheckConfigs: changes.factCheckConfigs?.newValue ?? null,
+          factCheckConfig: changes.factCheckConfig?.newValue ?? null,
+        };
+        applyProviderConfig(stored);
+      }
+
+      if (changes.factCheckTimeoutSec) {
+        const sec = Math.min(Math.max(Number(changes.factCheckTimeoutSec.newValue) || 9, 1), 120);
+        setTimeoutMs(sec * 1000);
+      }
+    };
+
+    if (chrome.storage.onChanged) {
+      chrome.storage.onChanged.addListener(listener);
+      return () => chrome.storage.onChanged.removeListener(listener);
     }
   }, []);
 

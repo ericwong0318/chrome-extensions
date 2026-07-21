@@ -154,12 +154,28 @@ const Blocker: React.FC = () => {
   // Load fact-check provider config to enable/disable the button. Supports both
   // the new ordered list (factCheckConfigs) and the legacy single config.
   useEffect(() => {
-    if (typeof chrome !== 'undefined' && chrome.storage) {
+    if (typeof chrome === 'undefined' || !chrome.storage || !chrome.storage.sync) return;
+
+    const loadFactCheckEnabled = () => {
       chrome.storage.sync.get({ factCheckConfigs: null, factCheckConfig: null }, (result) => {
         setFactCheckEnabled(
           normalizeFactCheckConfigs(result.factCheckConfigs, result.factCheckConfig).length > 0
         );
       });
+    };
+
+    loadFactCheckEnabled();
+
+    const listener = (changes: { [key: string]: chrome.storage.StorageChange }, areaName: string) => {
+      if (areaName !== 'sync') return;
+      if (changes.factCheckConfigs || changes.factCheckConfig) {
+        loadFactCheckEnabled();
+      }
+    };
+
+    if (chrome.storage.onChanged) {
+      chrome.storage.onChanged.addListener(listener);
+      return () => chrome.storage.onChanged.removeListener(listener);
     }
   }, []);
 
