@@ -192,7 +192,7 @@ export const callProvider = async (
         // Skip Authorization header for local URLs (Ollama, LocalAI, etc.) which
         // typically don't require or reject Bearer tokens.
         if (config.apiKey && !isLocalUrl(base)) {
-          headers['Authorization'] = `Bearer ${config.apiKey}`;
+          headers.Authorization = `Bearer ${config.apiKey}`;
         }
         body = JSON.stringify({
           model,
@@ -210,7 +210,7 @@ export const callProvider = async (
         // Skip Authorization header for local URLs (Ollama, LocalAI, etc.) which
         // typically don't require or reject Bearer tokens.
         if (config.apiKey && !isLocalUrl(base)) {
-          headers['Authorization'] = `Bearer ${config.apiKey}`;
+          headers.Authorization = `Bearer ${config.apiKey}`;
         }
         body = JSON.stringify({
           model,
@@ -226,7 +226,7 @@ export const callProvider = async (
         if (!config.apiKey) return { ok: false, error: 'OpenAI API key is missing.', attempts: [{ provider: 'openai', error: 'OpenAI API key is missing.' }] };
         const base = (config.baseUrl || DEFAULT_OPENAI_URL).replace(/\/$/, '');
         url = `${base}/chat/completions`;
-        headers['Authorization'] = `Bearer ${config.apiKey}`;
+        headers.Authorization = `Bearer ${config.apiKey}`;
         body = JSON.stringify({
           model,
           max_tokens: OPENAI_MAX_TOKENS,
@@ -241,7 +241,7 @@ export const callProvider = async (
         if (!config.apiKey) return { ok: false, error: 'DeepSeek API key is missing.', attempts: [{ provider: 'deepseek', error: 'DeepSeek API key is missing.' }] };
         const base = (config.baseUrl || DEFAULT_DEEPSEEK_URL).replace(/\/$/, '');
         url = `${base}/chat/completions`;
-        headers['Authorization'] = `Bearer ${config.apiKey}`;
+        headers.Authorization = `Bearer ${config.apiKey}`;
         body = JSON.stringify({
           model,
           max_tokens: OPENAI_MAX_TOKENS,
@@ -256,7 +256,7 @@ export const callProvider = async (
         if (!config.apiKey) return { ok: false, error: 'OpenRouter API key is missing.', attempts: [{ provider: 'openrouter', error: 'OpenRouter API key is missing.' }] };
         const base = (config.baseUrl || DEFAULT_OPENROUTER_URL).replace(/\/$/, '');
         url = `${base}/chat/completions`;
-        headers['Authorization'] = `Bearer ${config.apiKey}`;
+        headers.Authorization = `Bearer ${config.apiKey}`;
         // `timeout` is a non-standard OpenRouter field (seconds) that asks the
         // upstream to abort after this long. Best-effort only — the client-side
         // AbortController below remains the real guarantee.
