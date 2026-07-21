@@ -25,6 +25,10 @@ const VERDICT_LABEL: Record<Verdict, string> = {
   unverified: 'Unverified',
 };
 
+type FactCheckResultWithProvider = FactCheckResult & {
+  provider?: string | null;
+};
+
 type Props = {
   text: string;
   // Whether a provider is configured in Options. When false, the button is
@@ -36,7 +40,7 @@ type Props = {
     onFactCheck: (
       text: string,
       onStage?: (stage: string, isRetry?: boolean) => void
-    ) => Promise<FactCheckResult | { error: string }>;
+    ) => Promise<FactCheckResultWithProvider | { error: string }>;
 };
 
 const Section: React.FC<{ title: string; body: string }> = ({ title, body }) =>
