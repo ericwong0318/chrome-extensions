@@ -146,7 +146,8 @@ const extractText = (provider: ProviderId, data: any): string => {
 export const callProvider = async (
   text: string,
   config: FactCheckConfig,
-  timeoutMs: number = DEFAULT_PROVIDER_TIMEOUT_MS
+  timeoutMs: number = DEFAULT_PROVIDER_TIMEOUT_MS,
+  signal?: AbortSignal
 ): Promise<FactCheckResponse> => {
   if (!config || !config.provider) {
     return { ok: false, error: 'No fact-check provider configured.', attempts: [] };
@@ -277,8 +278,13 @@ export const callProvider = async (
 
     const controller = new AbortController();
     const timeout = window.setTimeout(() => controller.abort(), timeoutMs);
+    const onAbort = () => controller.abort();
+    if (signal) signal.addEventListener('abort', onAbort, { once: true });
     let res: Response;
     try {
+      if (signal?.aborted) {
+        throw new Error('Fact-check request cancelled.');
+      }
       res = await fetch(url, {
         method: 'POST',
         headers,
@@ -287,9 +293,12 @@ export const callProvider = async (
       });
     } catch (err) {
       window.clearTimeout(timeout);
+      if (signal) signal.removeEventListener('abort', onAbort);
       const aborted = controller.signal.aborted;
       const error = aborted
-        ? `Provider timed out after ${timeoutMs / 1000}s.`
+        ? signal?.aborted
+          ? 'Fact-check request cancelled.'
+          : `Provider timed out after ${timeoutMs / 1000}s.`
         : err instanceof Error
           ? err.message
           : String(err);
@@ -297,6 +306,8 @@ export const callProvider = async (
       logError(`Fact-check provider "${config.provider}" request failed`, error);
       return { ok: false, error, attempts: [{ provider: config.provider, error }] };
     }
+    window.clearTimeout(timeout);
+    if (signal) signal.removeEventListener('abort', onAbort);
     window.clearTimeout(timeout);
 
     if (!res.ok) {
@@ -329,16 +340,25 @@ export const callProviders = async (
   text: string,
   configs: FactCheckConfig[],
   onStage?: StageReporter,
-  timeoutMs: number = DEFAULT_PROVIDER_TIMEOUT_MS
+  timeoutMs: number = DEFAULT_PROVIDER_TIMEOUT_MS,
+  signal?: AbortSignal
 ): Promise<FactCheckResponse> => {
   const attempts: ProviderAttempt[] = [];
   let isRetry = false;
 
   for (const cfg of configs || []) {
+    if (signal?.aborted) {
+      return { ok: false, error: 'Fact-check request cancelled.', attempts };
+    }
     if (!cfg || !cfg.provider) continue;
     const model = cfg.model ? ` (${cfg.model})` : '';
     onStage?.(`Contacting ${cfg.provider}${model}…`, isRetry);
-    const res = await callProvider(text, cfg, timeoutMs);
+    const res = await callProvider(text, cfg, timeoutMs, signal);
+    if (signal?.aborted) {
+      return res.ok
+        ? res
+        : { ok: false, error: 'Fact-check request cancelled.', attempts: [...attempts, ...res.attempts] };
+    }
     if (res.ok) return res;
     attempts.push(...res.attempts);
     // Announce the fallback so the UI can show the next provider + recount.

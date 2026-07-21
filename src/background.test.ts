@@ -3,10 +3,14 @@ import { mockChromeStorage } from './test/setup';
 // Re-create the listener logic in isolation by importing the module side-effect.
 // We simulate chrome.runtime.onMessage by capturing the registered listener.
 const listeners: Array<(req: any, sender: any, sendResponse: any) => any> = [];
+const connectListeners: Array<(port: any) => void> = [];
 
 const mockRuntime = {
   onMessage: {
     addListener: (fn: any) => listeners.push(fn),
+  },
+  onConnect: {
+    addListener: (fn: any) => connectListeners.push(fn),
   },
   sendMessage: {
     addListener: (fn: any) => fn,
@@ -22,6 +26,7 @@ const mockAction = {
 
 beforeEach(() => {
   listeners.length = 0;
+  connectListeners.length = 0;
   (global as any).chrome = { runtime: mockRuntime, storage: mockChromeStorage, action: mockAction };
   // Clear module registry so background.ts re-registers its listener fresh.
   vi.resetModules();
@@ -80,6 +85,42 @@ describe('background message handler', () => {
     const handler = mockAction.onClicked.addListener.mock.calls[0][0];
     handler();
     expect(mockRuntime.openOptionsPage).toHaveBeenCalledTimes(1);
+  });
+
+  it('cancels the in-flight fact-check when the content port disconnects', async () => {
+    const captured: { signal?: AbortSignal } = {};
+    const callProvidersMock = vi.fn((text: string, configs: any, onStage: any, timeoutMs: number, signal?: AbortSignal) => {
+      captured.signal = signal;
+      return new Promise(() => {
+        // Keep the promise pending to simulate an in-flight request.
+      });
+    });
+    await mockChromeStorage.sync.set({ factCheckConfigs: [{ provider: 'openai', apiKey: 'oai' }] });
+    vi.doMock('./factcheck/providers', () => ({ callProviders: callProvidersMock }));
+
+    await import('./background');
+    expect(connectListeners).toHaveLength(1);
+
+    const port = {
+      name: 'factCheck',
+      onMessage: { addListener: vi.fn() },
+      onDisconnect: { addListener: vi.fn(), removeListener: vi.fn() },
+      postMessage: vi.fn(),
+    } as any;
+    connectListeners[0](port);
+
+    expect(port.onMessage.addListener).toHaveBeenCalledTimes(1);
+    const messageListener = port.onMessage.addListener.mock.calls[0][0];
+    messageListener({ text: 'hello' });
+    await new Promise((r) => setTimeout(r, 0));
+
+    expect(callProvidersMock).toHaveBeenCalledTimes(1);
+    expect(captured.signal).toBeDefined();
+
+    expect(port.onDisconnect.addListener).toHaveBeenCalledTimes(2);
+    const disconnectHandler = port.onDisconnect.addListener.mock.calls[1][0];
+    disconnectHandler();
+    expect(captured.signal?.aborted).toBe(true);
   });
 
   it('round-trips a blockUser message from a content script and persists it', async () => {
