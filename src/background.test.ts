@@ -123,6 +123,49 @@ describe('background message handler', () => {
     expect(captured.signal?.aborted).toBe(true);
   });
 
+  it('streams stage updates and the final result over the fact-check port', async () => {
+    const callProvidersMock = vi.fn((text: string, configs: any, onStage: any) => {
+      onStage('Contacting AI provider…', false);
+      onStage('Contacting AI provider…', true);
+      return Promise.resolve({
+        ok: true,
+        result: {
+          validityVsTruth: 'Stage streaming works.',
+          rhetoric: { ethos: 'Low', pathos: 'Low', logos: 'High' },
+          fallacies: [],
+          verdict: 'credible',
+        },
+        provider: 'openai',
+      });
+    });
+
+    await mockChromeStorage.sync.set({ factCheckConfigs: [{ provider: 'openai', apiKey: 'oai' }] });
+    vi.doMock('./factcheck/providers', () => ({ callProviders: callProvidersMock }));
+
+    await import('./background');
+    expect(connectListeners).toHaveLength(1);
+
+    const port = {
+      name: 'factCheck',
+      onMessage: { addListener: vi.fn() },
+      onDisconnect: { addListener: vi.fn(), removeListener: vi.fn() },
+      postMessage: vi.fn(),
+    } as any;
+    connectListeners[0](port);
+
+    const messageListener = port.onMessage.addListener.mock.calls[0][0];
+    messageListener({ text: 'hello' });
+    await new Promise((r) => setTimeout(r, 0));
+
+    expect(callProvidersMock).toHaveBeenCalledTimes(1);
+    expect(port.postMessage).toHaveBeenCalledWith({ stage: 'Contacting AI provider…', isRetry: false });
+    expect(port.postMessage).toHaveBeenCalledWith({ stage: 'Contacting AI provider…', isRetry: true });
+    expect(port.postMessage).toHaveBeenCalledWith({
+      result: expect.objectContaining({ verdict: 'credible' }),
+      provider: 'openai',
+    });
+  });
+
   it('round-trips a blockUser message from a content script and persists it', async () => {
     // Register the background listener (populates `listeners`).
     await dispatch({ action: 'getBlockedUsers' });
