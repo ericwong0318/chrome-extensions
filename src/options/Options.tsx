@@ -22,7 +22,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
 import { getLogs, clearLogs, logError, LogEntry } from '../logger';
 import { FactCheckLanguage, LANGUAGE_LABELS } from '../factcheck/prompt';
-import { ProviderId, callProvider } from '../factcheck/providers';
+import { FactCheckConfig, ProviderId, callProvider } from '../factcheck/providers';
 
 type BlockedUser = { id: string; name: string };
 
@@ -181,7 +181,7 @@ const Options: React.FC = () => {
     setTestStatus((s) => ({ ...s, [idx]: 'testing' }));
     setTestMsg((m) => ({ ...m, [idx]: '' }));
     try {
-      const res = await callProvider('Connection test.', cfg, 9000);
+      const res = await callProvider('Connection test.', cfg as FactCheckConfig, 9000);
       if (res.ok) {
         setTestStatus((s) => ({ ...s, [idx]: 'ok' }));
         setTestMsg((m) => ({ ...m, [idx]: 'Connected successfully.' }));
@@ -317,8 +317,8 @@ const Options: React.FC = () => {
                       />
                       <Typography variant="body2" color="text.secondary" sx={{ mt: -1, mb: 1 }}>
                         For Ollama: allow CORS from the extension by running
-                        <code style={{ ml: 1, fontFamily: 'monospace' }}>{'launchctl setenv OLLAMA_ORIGINS "*"'}</code>
-                        (macOS) or set <code style={{ ml: 1, fontFamily: 'monospace' }}>{'OLLAMA_ORIGINS=*'}</code> in your environment.
+                        <code style={{ marginLeft: '4px', fontFamily: 'monospace' }}>{'launchctl setenv OLLAMA_ORIGINS "*"'}</code>
+                        (macOS) or set <code style={{ marginLeft: '4px', fontFamily: 'monospace' }}>{'OLLAMA_ORIGINS=*'}</code> in your environment.
                       </Typography>
                     </>
                   )}
