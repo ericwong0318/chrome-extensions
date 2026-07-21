@@ -99,13 +99,32 @@ if (chrome.runtime.onConnect) {
         const timeoutSec = Math.min(Math.max(Number(result.factCheckTimeoutSec) || 9, 1), 120);
         const timeoutMs = timeoutSec * 1000;
 
+        const controller = new AbortController();
+        let portClosed = false;
+        const onDisconnect = () => {
+          portClosed = true;
+          controller.abort();
+        };
+        port.onDisconnect.addListener(onDisconnect);
+
         const onStage = (stage: string, isRetry: boolean) => {
           try { port.postMessage({ stage, isRetry }); } catch { /* port closed */ }
         };
-        callProviders(msg.text, configs, onStage, timeoutMs).then((res) => {
-          if (res.ok) port.postMessage({ result: res.result, provider: res.provider });
-          else port.postMessage({ error: res.error });
-        });
+        callProviders(msg.text, configs, onStage, timeoutMs, controller.signal)
+          .then((res) => {
+            if (portClosed) return;
+            try {
+              if (res.ok) port.postMessage({ result: res.result, provider: res.provider });
+              else port.postMessage({ error: res.error });
+            } catch {
+              /* port closed */
+            }
+          })
+          .finally(() => {
+            if (port.onDisconnect.removeListener) {
+              port.onDisconnect.removeListener(onDisconnect);
+            }
+          });
       }
     );
   });
