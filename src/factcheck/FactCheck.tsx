@@ -12,6 +12,7 @@ import {
 import FactCheckIcon from '@mui/icons-material/FactCheck';
 import { FactCheckResult, Verdict, FactCheckLanguage } from './prompt';
 import { runFactCheckPipeline, MAX_FACTCHECK_MS } from './pipeline';
+import { normalizeFactCheckConfigs } from './storage';
 
 const VERDICT_COLOR: Record<Verdict, 'success' | 'warning' | 'default'> = {
   credible: 'success',
@@ -72,22 +73,30 @@ const FactCheck: React.FC<Props> = ({ text, enabled, onFactCheck }) => {
   useEffect(() => {
     if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.sync) {
       // Initial load
-      chrome.storage.sync.get({ factCheckConfigs: [], factCheckTimeoutSec: 9 }, (result) => {
-        const configs = result.factCheckConfigs as { language?: FactCheckLanguage; provider?: string; model?: string }[];
-        if (configs && configs.length > 0) {
-          // Use the language of the first provider as the default
-          setLanguage(configs[0].language || 'en');
-          setProviderInfo({ provider: configs[0].provider, model: configs[0].model });
+      chrome.storage.sync.get(
+        { factCheckConfigs: null, factCheckConfig: null, factCheckTimeoutSec: 9 },
+        (result) => {
+          const configs = normalizeFactCheckConfigs(result.factCheckConfigs, result.factCheckConfig);
+          if (configs.length > 0) {
+            setLanguage(configs[0].language || 'en');
+            setProviderInfo({ provider: configs[0].provider, model: configs[0].model });
+          }
+          const sec = Math.min(Math.max(Number(result.factCheckTimeoutSec) || 9, 1), 120);
+          setTimeoutMs(sec * 1000);
         }
-        const sec = Math.min(Math.max(Number(result.factCheckTimeoutSec) || 9, 1), 120);
-        setTimeoutMs(sec * 1000);
-      });
+      );
 
       // Listen for changes
       const listener = (changes: { [key: string]: chrome.storage.StorageChange }, area: string) => {
-        if (area === 'sync' && changes.factCheckConfigs) {
-          const newConfigs = changes.factCheckConfigs.newValue as { language?: FactCheckLanguage; provider?: string; model?: string }[];
-          if (newConfigs && newConfigs.length > 0) {
+        if (area !== 'sync') return;
+
+        if (changes.factCheckConfigs || changes.factCheckConfig) {
+          const stored = {
+            factCheckConfigs: changes.factCheckConfigs?.newValue ?? null,
+            factCheckConfig: changes.factCheckConfig?.newValue ?? null,
+          };
+          const newConfigs = normalizeFactCheckConfigs(stored.factCheckConfigs, stored.factCheckConfig);
+          if (newConfigs.length > 0) {
             setLanguage(newConfigs[0].language || 'en');
             setProviderInfo({ provider: newConfigs[0].provider, model: newConfigs[0].model });
           }

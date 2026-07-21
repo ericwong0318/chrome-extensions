@@ -1,5 +1,6 @@
 import { logError } from './logger';
 import { callProviders, FactCheckConfig } from './factcheck/providers';
+import { normalizeFactCheckConfigs } from './factcheck/storage';
 
 export {};
 
@@ -50,23 +51,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       chrome.storage.sync.get(
         { factCheckConfigs: null, factCheckConfig: null, factCheckTimeoutSec: 9 },
         (result) => {
-        const list = result.factCheckConfigs as FactCheckConfig[] | null | undefined;
-        const legacy = result.factCheckConfig as
-          | { provider?: string; apiKey?: string; model?: string; baseUrl?: string; language?: string }
-          | null
-          | undefined;
-
-        const configs: FactCheckConfig[] = Array.isArray(list) && list.length > 0
-          ? list
-          : legacy && legacy.provider
-            ? [{
-                provider: legacy.provider as FactCheckConfig['provider'],
-                apiKey: legacy.apiKey,
-                model: legacy.model,
-                baseUrl: legacy.baseUrl,
-                language: legacy.language as FactCheckConfig['language'],
-              }]
-            : [];
+        const configs = normalizeFactCheckConfigs(result.factCheckConfigs, result.factCheckConfig);
 
         if (configs.length === 0) {
           sendResponse({ disabled: true });
@@ -104,23 +89,7 @@ if (chrome.runtime.onConnect) {
     chrome.storage.sync.get(
       { factCheckConfigs: null, factCheckConfig: null, factCheckTimeoutSec: 9 },
       (result) => {
-        const list = result.factCheckConfigs as FactCheckConfig[] | null | undefined;
-        const legacy = result.factCheckConfig as
-          | { provider?: string; apiKey?: string; model?: string; baseUrl?: string; language?: string }
-          | null
-          | undefined;
-
-        const configs: FactCheckConfig[] = Array.isArray(list) && list.length > 0
-          ? list
-          : legacy && legacy.provider
-            ? [{
-                provider: legacy.provider as FactCheckConfig['provider'],
-                apiKey: legacy.apiKey,
-                model: legacy.model,
-                baseUrl: legacy.baseUrl,
-                language: legacy.language as FactCheckConfig['language'],
-              }]
-            : [];
+        const configs = normalizeFactCheckConfigs(result.factCheckConfigs, result.factCheckConfig);
 
         if (configs.length === 0) {
           port.postMessage({ disabled: true });

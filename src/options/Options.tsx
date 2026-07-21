@@ -23,6 +23,7 @@ import AddIcon from '@mui/icons-material/Add';
 import { getLogs, clearLogs, logError, LogEntry } from '../logger';
 import { FactCheckLanguage, LANGUAGE_LABELS } from '../factcheck/prompt';
 import { FactCheckConfig, ProviderId, callProvider } from '../factcheck/providers';
+import { normalizeFactCheckConfigs } from '../factcheck/storage';
 
 type BlockedUser = { id: string; name: string };
 
@@ -120,12 +121,9 @@ const Options: React.FC = () => {
       chrome.storage.sync.get(
         { factCheckConfigs: null, factCheckConfig: null, factCheckTimeoutSec: 9 },
         (result) => {
-        const list = result.factCheckConfigs as ProviderConfig[] | null | undefined;
-        const legacy = result.factCheckConfig as ProviderConfig | null | undefined;
-        if (Array.isArray(list) && list.length > 0) {
-          setProviders(list);
-        } else if (legacy && legacy.provider) {
-          setProviders([legacy]);
+        const configs = normalizeFactCheckConfigs(result.factCheckConfigs, result.factCheckConfig);
+        if (configs.length > 0) {
+          setProviders(configs);
         }
         if (typeof result.factCheckTimeoutSec === 'number') {
           setTimeoutSec(result.factCheckTimeoutSec);
