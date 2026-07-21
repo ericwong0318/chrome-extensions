@@ -44,6 +44,40 @@ const DEFAULT_DEEPSEEK_URL = 'https://api.deepseek.com/v1';
 const DEFAULT_OPENROUTER_URL = 'https://openrouter.ai/api/v1';
 const DEFAULT_OTHER_URL = 'https://api.openai.com/v1';
 
+// Return true if the base URL points to a local/private address that typically
+// doesn't require (or rejects) an Authorization header (e.g. Ollama, LocalAI).
+const isLocalUrl = (baseUrl: string): boolean => {
+  try {
+    const url = new URL(baseUrl);
+    const host = url.hostname;
+    return (
+      host === 'localhost' ||
+      host === '127.0.0.1' ||
+      host === '::1' ||
+      host.startsWith('192.168.') ||
+      host.startsWith('10.') ||
+      host.startsWith('172.16.') ||
+      host.startsWith('172.17.') ||
+      host.startsWith('172.18.') ||
+      host.startsWith('172.19.') ||
+      host.startsWith('172.20.') ||
+      host.startsWith('172.21.') ||
+      host.startsWith('172.22.') ||
+      host.startsWith('172.23.') ||
+      host.startsWith('172.24.') ||
+      host.startsWith('172.25.') ||
+      host.startsWith('172.26.') ||
+      host.startsWith('172.27.') ||
+      host.startsWith('172.28.') ||
+      host.startsWith('172.29.') ||
+      host.startsWith('172.30.') ||
+      host.startsWith('172.31.')
+    );
+  } catch {
+    return false;
+  }
+};
+
 // Each individual provider attempt is capped at this many ms by default. If a
 // provider is slow or hangs, the call aborts so we can fall back to the next
 // provider and the UI "recounts" its progress bar for the new attempt. The
@@ -155,7 +189,11 @@ export const callProvider = async (
         // No key required by default; base URL is configurable.
         const base = (config.baseUrl || DEFAULT_LOCAL_URL).replace(/\/$/, '');
         url = `${base}/chat/completions`;
-        if (config.apiKey) headers['Authorization'] = `Bearer ${config.apiKey}`;
+        // Skip Authorization header for local URLs (Ollama, LocalAI, etc.) which
+        // typically don't require or reject Bearer tokens.
+        if (config.apiKey && !isLocalUrl(base)) {
+          headers['Authorization'] = `Bearer ${config.apiKey}`;
+        }
         body = JSON.stringify({
           model,
           max_tokens: OPENAI_MAX_TOKENS,
@@ -169,7 +207,11 @@ export const callProvider = async (
       case 'other': {
         const base = (config.baseUrl || DEFAULT_OTHER_URL).replace(/\/$/, '');
         url = `${base}/chat/completions`;
-        if (config.apiKey) headers['Authorization'] = `Bearer ${config.apiKey}`;
+        // Skip Authorization header for local URLs (Ollama, LocalAI, etc.) which
+        // typically don't require or reject Bearer tokens.
+        if (config.apiKey && !isLocalUrl(base)) {
+          headers['Authorization'] = `Bearer ${config.apiKey}`;
+        }
         body = JSON.stringify({
           model,
           max_tokens: OPENAI_MAX_TOKENS,

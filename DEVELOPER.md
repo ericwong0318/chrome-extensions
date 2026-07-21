@@ -31,6 +31,13 @@
 - Production: `npm run build` → `dist/`
 - Preview: `npm run preview`
 
+## AI Task Completion Protocol
+After completing any development task, the AI must run the full test suite and build to verify the changes:
+1. Run tests: `npm test`
+2. Build project: `npm run build`
+
+Both commands must pass before considering the task complete.
+
 ## Constraints
 1. Pass CI checks (GitHub Actions)
 2. Content scripts: No direct DOM manipulation (use React portals)

@@ -90,6 +90,45 @@ describe('callProvider', () => {
     expect(init.headers['Authorization']).toBe('Bearer ok');
   });
 
+  it('posts to the Other (OpenAI-compatible) endpoint without Authorization when base URL is localhost', async () => {
+    fetchMock.mockResolvedValue(okOpenAi('{"verdict":"credible"}'));
+    await callProvider('claim', {
+      provider: 'other',
+      apiKey: 'dummy-key',
+      model: 'llama3.1',
+      baseUrl: 'http://localhost:11434/v1',
+    });
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toBe('http://localhost:11434/v1/chat/completions');
+    expect(init.headers['Authorization']).toBeUndefined();
+  });
+
+  it('posts to the Other (OpenAI-compatible) endpoint without Authorization when base URL is 127.0.0.1', async () => {
+    fetchMock.mockResolvedValue(okOpenAi('{"verdict":"credible"}'));
+    await callProvider('claim', {
+      provider: 'other',
+      apiKey: 'dummy-key',
+      model: 'llama3.1',
+      baseUrl: 'http://127.0.0.1:8080/v1',
+    });
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toBe('http://127.0.0.1:8080/v1/chat/completions');
+    expect(init.headers['Authorization']).toBeUndefined();
+  });
+
+  it('posts to the Other (OpenAI-compatible) endpoint without Authorization when base URL is private IP', async () => {
+    fetchMock.mockResolvedValue(okOpenAi('{"verdict":"credible"}'));
+    await callProvider('claim', {
+      provider: 'other',
+      apiKey: 'dummy-key',
+      model: 'llama3.1',
+      baseUrl: 'http://192.168.1.100:11434/v1',
+    });
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toBe('http://192.168.1.100:11434/v1/chat/completions');
+    expect(init.headers['Authorization']).toBeUndefined();
+  });
+
   it('posts to OpenRouter with a bearer token and default base URL', async () => {
     fetchMock.mockResolvedValue(okOpenAi('{"verdict":"credible"}'));
     const res = await callProvider('claim', { provider: 'openrouter', apiKey: 'ork' });
