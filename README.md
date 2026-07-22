@@ -9,65 +9,59 @@ A Chrome extension that lets you block users on Zhihu by hiding all their posts.
 - **AI fact-checking**: Get AI-powered analysis of Zhihu content (optional feature)
 - **Works everywhere**: Automatically detects and blocks users across Zhihu
 
-## Quick Start
-
-### Install (Load Unpacked)
-
-1. **Build the extension:**
-   ```bash
-   npm install
-   npm run build
-   ```
-
-2. **Load in Chrome:**
-   - Go to `chrome://extensions`
-   - Enable "Developer mode"
-   - Click "Load unpacked" and select the `dist/` folder
-
-3. **Start blocking:**
-   - Visit Zhihu
-   - Look for the **Block** button next to user names
-   - Click to hide their posts
-
-### Managing Blocks
-
-- **Toolbar icon**: Click to open options page
-- **Block button**: Hides user's posts and adds to blocked list
-- **Unblock button**: Removes user from blocked list (content reappears)
-- **Clear all**: Removes all blocked users at once
-
 ## Features
 
-### Simple Blocking
-- One-click blocking of Zhihu users
-- Content immediately hidden from your feed
-- Toggle between blocked and unblocked states
+### Seamless Blocking
 
-### Options Page
-- View all blocked users
-- Unblock individual users
-- Clear entire block list
-- Configure AI fact-checking (optional)
+- **One-click blocking**: Hide posts from specific Zhihu users directly from your feed.
+- **Instant content hiding**: Blocked content disappears immediately.
+- **Easy management**: View and unblock users anytime via the extension options page.
 
-### AI Fact-Checking (Optional)
-- Click **Fact Check** button on Zhihu content
-- Get AI analysis of posts/questions
-- See structured breakdown of arguments and credibility
-- Choose reply language (English, Traditional/Simplified Chinese)
-- **Multiple providers with fallback**: Configure several AI providers (Claude, OpenAI, Gemini, DeepSeek, OpenRouter, local/Ollama, or any OpenAI-compatible endpoint) in your preferred order. If the first provider fails (rate limit, bad key, server error, network issue), the extension automatically falls back to the next one. The result shows which provider answered (`via <provider>`).
+
+
+### AI-Powered Fact-Checking (Optional)
+
+- **Contextual analysis**: Get AI-driven analysis of Zhihu content (posts, questions, answers).
+- **Multi-language support**: Choose reply language (English, Traditional/Simplified Chinese).
+- **Flexible AI providers with fallback**: Configure multiple AI providers (Claude, OpenAI, Gemini, DeepSeek, OpenRouter, local/Ollama, or any OpenAI-compatible endpoint). The extension automatically falls back to the next provider if the primary one fails.
+
+
+
+## Quick Start
+
+1. **Install dependencies & build**:
+  ```bash
+   npm install
+   npm run build
+  ```
+2. **Load in Chrome**:
+  - Navigate to `chrome://extensions`.
+  - Enable "Developer mode".
+  - Click "Load unpacked" and select the `dist/` folder.
+3. **Start blocking and fact-checking**:
+  - Visit Zhihu.
+  - Use the **Block** button next to user names to hide their content.
+  - After you click the extension icon and setup AI provider in option page, click the **Fact Check** button on content to get AI analysis. 
 
 ## Tech Stack (Behind the Scenes)
 
-| Layer | Technology |
-|-------|------------|
-| Build | Vite 5 + CRX plugin |
-| UI | React 18 + MUI 5 + Emotion |
-| Testing | Vitest + Playwright |
-| Language | TypeScript |
+
+| Layer    | Technology                 |
+| -------- | -------------------------- |
+| Build    | Vite 8 + CRX plugin        |
+| UI       | React 19 + MUI 9 + Emotion |
+| Testing  | Vitest 4 + Playwright 1    |
+| Language | TypeScript 5               |
+
+
+
 
 ## Development
 
+
+
 ### Commands
+
 ```bash
 npm run dev        # Development mode
 npm run build      # Build for production
@@ -76,7 +70,10 @@ npm test          # Run tests
 npm run test:watch # Watch mode for tests
 ```
 
+
+
 ### Project Structure
+
 ```
 src/
   background.ts    # Extension background logic
@@ -88,6 +85,8 @@ src/
 e2e/              # End-to-end tests
 ```
 
+
+
 ## How It Works
 
 1. **Detection**: Content script looks for Zhihu user links
@@ -96,13 +95,18 @@ e2e/              # End-to-end tests
 4. **Hiding**: Blocked content hidden via CSS (`display: none`)
 5. **Management**: Options page lets you view and manage blocked users
 
+
+
 ## Testing
 
 The extension has comprehensive tests:
+
 - **53 test cases** across 6 files
 - **52 unit/integration tests** with Vitest
 - **1 end-to-end test** with Playwright
 - All tests run in CI before merging
+
+
 
 ## Storage
 
@@ -113,20 +117,25 @@ Fact-check providers are stored under the key `factCheckConfigs` as an ordered a
 ## Security & Privacy
 
 - **Local storage**: User data stored in your Chrome account
-- **No external APIs**: Extension works offline for basic blocking
 - **Secure messaging**: Background script handles all communication
 - **Shadow DOM**: Extension styles isolated to prevent page contamination
+
+
 
 ## CI/CD
 
 The project uses GitHub Actions for:
+
 - **CI**: Runs tests and builds on every PR
 - **Release**: Automated releases with version bumping
 - **Conventional commits**: Automated version management
 
+
+
 ## Getting Help
 
 For issues or questions:
+
 1. Check the existing tests for examples
 2. Review the code in `src/` for implementation details
 3. Look at the options page for configuration options
