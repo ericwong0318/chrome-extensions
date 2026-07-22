@@ -3,7 +3,9 @@ import { logError, logWarn, logInfo, getLogs, clearLogs } from './logger';
 import { mockChromeStorage } from './test/setup';
 
 beforeEach(async () => {
-  (global as any).chrome = { storage: mockChromeStorage };
+  (global as unknown as { chrome: { storage: typeof mockChromeStorage } }).chrome = {
+    storage: mockChromeStorage,
+  };
   await clearLogs();
 });
 
