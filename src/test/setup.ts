@@ -2,14 +2,20 @@ import '@testing-library/jest-dom';
 import { beforeEach } from 'vitest';
 
 // Mock chrome.storage for tests (both sync and local share the same store)
-let store: Record<string, any> = {};
+type StorageValue = unknown;
+type StorageItems = Record<string, StorageValue>;
+
+let store: StorageItems = {};
 const changeListeners: Array<
-  (changes: Record<string, any>, areaName: string) => void
+  (changes: StorageItems, areaName: string) => void
 > = [];
 
 const makeArea = () => ({
-  get: (keys: any, cb?: (result: any) => void) => {
-    const result: any = {};
+  get: (
+    keys: string | string[] | StorageItems | null,
+    cb?: (result: StorageItems) => void
+  ) => {
+    const result: StorageItems = {};
     if (typeof keys === 'object' && keys !== null && !Array.isArray(keys)) {
       for (const k of Object.keys(keys))
         result[k] = k in store ? store[k] : keys[k];
@@ -19,7 +25,7 @@ const makeArea = () => ({
     if (cb) cb(result);
     return Promise.resolve(result);
   },
-  set: (items: any, cb?: () => void) => {
+  set: (items: StorageItems, cb?: () => void) => {
     Object.assign(store, items);
     if (cb) cb();
     return Promise.resolve();
@@ -40,7 +46,10 @@ export const mockChromeStorage = {
   sync: makeArea(),
   local: makeArea(),
   onChanged,
-  triggerOnChanged: (changes: Record<string, any>, areaName = 'sync') => {
+  triggerOnChanged: (
+    changes: StorageItems,
+    areaName = 'sync'
+  ) => {
     changeListeners.slice().forEach((listener) => listener(changes, areaName));
   },
 };
@@ -48,5 +57,5 @@ export const mockChromeStorage = {
 beforeEach(() => {
   store = {};
   changeListeners.length = 0;
-  (global as any).chrome = { storage: mockChromeStorage };
+  (global as Record<string, unknown>).chrome = { storage: mockChromeStorage };
 });
