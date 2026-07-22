@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Request } from './types/request';
 import { mockChromeStorage } from './test/setup';
+import type { FactCheckConfig } from './factcheck/providers';
 
 // Re-create the listener logic in isolation by importing the module side-effect.
 // We simulate chrome.runtime.onMessage by capturing the registered listener.
@@ -39,7 +40,7 @@ const mockAction = {
 beforeEach(() => {
   listeners.length = 0;
   connectListeners.length = 0;
-  (global as any).chrome = {
+  (global as { chrome: unknown }).chrome = {
     runtime: mockRuntime,
     storage: mockChromeStorage,
     action: mockAction,
@@ -75,7 +76,7 @@ describe('background message handler', () => {
     await dispatch({ action: 'blockUser', userId: 'u1', userName: 'Alice' });
     const stored = (await mockChromeStorage.sync.get({
       zhihuBlockedUsers: [],
-    })) as any;
+    })) as { zhihuBlockedUsers: Array<{ id: string; name: string }> };
     expect(stored.zhihuBlockedUsers).toHaveLength(1);
   });
 
@@ -86,7 +87,7 @@ describe('background message handler', () => {
     expect(r).toBe(true);
     const stored = (await mockChromeStorage.sync.get({
       zhihuBlockedUsers: [],
-    })) as any;
+    })) as { zhihuBlockedUsers: Array<{ id: string; name: string }> };
     expect(stored.zhihuBlockedUsers).toHaveLength(0);
   });
 
@@ -118,8 +119,8 @@ describe('background message handler', () => {
     const callProvidersMock = vi.fn(
       (
         text: string,
-        configs: any,
-        onStage: any,
+        configs: FactCheckConfig[],
+        onStage: (stage: string, isRetry: boolean) => void,
         timeoutMs: number,
         signal?: AbortSignal,
       ) => {
@@ -139,31 +140,40 @@ describe('background message handler', () => {
     await import('./background');
     expect(connectListeners).toHaveLength(1);
 
+    const onMessageAddListener = vi.fn();
+    const onDisconnectAddListener = vi.fn();
+    const onDisconnectRemoveListener = vi.fn();
+    const postMessage = vi.fn();
     const port = {
       name: 'factCheck',
-      onMessage: { addListener: vi.fn() },
-      onDisconnect: { addListener: vi.fn(), removeListener: vi.fn() },
-      postMessage: vi.fn(),
-    } as any;
+      disconnect: vi.fn(),
+      onMessage: { addListener: onMessageAddListener },
+      onDisconnect: { addListener: onDisconnectAddListener, removeListener: onDisconnectRemoveListener },
+      postMessage,
+    } as unknown as chrome.runtime.Port;
     connectListeners[0](port);
 
-    expect(port.onMessage.addListener).toHaveBeenCalledTimes(1);
-    const messageListener = port.onMessage.addListener.mock.calls[0][0];
+    expect(onMessageAddListener).toHaveBeenCalledTimes(1);
+    const messageListener = onMessageAddListener.mock.calls[0][0];
     messageListener({ text: 'hello' });
     await new Promise((r) => setTimeout(r, 0));
 
     expect(callProvidersMock).toHaveBeenCalledTimes(1);
     expect(captured.signal).toBeDefined();
 
-    expect(port.onDisconnect.addListener).toHaveBeenCalledTimes(2);
-    const disconnectHandler = port.onDisconnect.addListener.mock.calls[1][0];
+    expect(onDisconnectAddListener).toHaveBeenCalledTimes(2);
+    const disconnectHandler = onDisconnectAddListener.mock.calls[1][0];
     disconnectHandler();
     expect(captured.signal?.aborted).toBe(true);
   });
 
   it('streams stage updates and the final result over the fact-check port', async () => {
     const callProvidersMock = vi.fn(
-      (text: string, configs: any, onStage: any) => {
+      (
+        text: string,
+        configs: FactCheckConfig[],
+        onStage: (stage: string, isRetry: boolean) => void,
+      ) => {
         onStage('Contacting AI provider…', false);
         onStage('Contacting AI provider…', true);
         return Promise.resolve({
@@ -189,28 +199,33 @@ describe('background message handler', () => {
     await import('./background');
     expect(connectListeners).toHaveLength(1);
 
+    const onMessageAddListener = vi.fn();
+    const onDisconnectAddListener = vi.fn();
+    const onDisconnectRemoveListener = vi.fn();
+    const postMessage = vi.fn();
     const port = {
       name: 'factCheck',
-      onMessage: { addListener: vi.fn() },
-      onDisconnect: { addListener: vi.fn(), removeListener: vi.fn() },
-      postMessage: vi.fn(),
-    } as any;
+      disconnect: vi.fn(),
+      onMessage: { addListener: onMessageAddListener },
+      onDisconnect: { addListener: onDisconnectAddListener, removeListener: onDisconnectRemoveListener },
+      postMessage,
+    } as unknown as chrome.runtime.Port;
     connectListeners[0](port);
 
-    const messageListener = port.onMessage.addListener.mock.calls[0][0];
+    const messageListener = onMessageAddListener.mock.calls[0][0];
     messageListener({ text: 'hello' });
     await new Promise((r) => setTimeout(r, 0));
 
     expect(callProvidersMock).toHaveBeenCalledTimes(1);
-    expect(port.postMessage).toHaveBeenCalledWith({
+    expect(postMessage).toHaveBeenCalledWith({
       stage: 'Contacting AI provider…',
       isRetry: false,
     });
-    expect(port.postMessage).toHaveBeenCalledWith({
+    expect(postMessage).toHaveBeenCalledWith({
       stage: 'Contacting AI provider…',
       isRetry: true,
     });
-    expect(port.postMessage).toHaveBeenCalledWith({
+    expect(postMessage).toHaveBeenCalledWith({
       result: expect.objectContaining({ verdict: 'credible' }),
       provider: 'openai',
     });
@@ -231,7 +246,7 @@ describe('background message handler', () => {
     // The user should now be persisted in storage (the integration contract).
     const stored = (await mockChromeStorage.sync.get({
       zhihuBlockedUsers: [],
-    })) as any;
+    })) as { zhihuBlockedUsers: Array<{ id: string; name: string }> };
     expect(stored.zhihuBlockedUsers).toEqual([{ id: 'u9', name: 'Zoe' }]);
   });
 });
