@@ -1,5 +1,8 @@
 # 🏃‍♂️ CLAUDE.md: Zhihu User Blocker (MV3)
 
+## AI Co-Author Policy
+- Never add "Co-authored-by: Cursor", "Co-authored-by: Copilot", "Made-with: Cursor", or any similar AI attribution/trailer to commits, PRs, or code comments.
+
 > **This file is the canonical source of truth for project rules.** If you switch AI tools, point the new tool at this file (or `DEVELOPER.md`). The Claude-specific `.clinerules` is just a thin shim that points here.
 
 This is a **Manifest V3 Chrome Extension** built with **Vite**, **React**, **MUI 5 + Emotion**, and **TypeScript (strict)**. It blocks users on Zhihu and adds AI-powered fact-checking.
