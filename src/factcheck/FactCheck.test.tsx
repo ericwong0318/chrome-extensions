@@ -13,7 +13,7 @@ import { mockChromeStorage } from '../test/setup';
 
 describe('FactCheck UI', () => {
   beforeEach(() => {
-    (global as any).chrome = { storage: mockChromeStorage };
+    (global as Record<string, unknown>).chrome = { storage: mockChromeStorage };
   });
 
   afterEach(() => {

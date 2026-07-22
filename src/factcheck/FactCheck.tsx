@@ -10,7 +10,12 @@ import {
   Tooltip,
 } from '@mui/material';
 import FactCheckIcon from '@mui/icons-material/FactCheck';
-import { FactCheckResult, Verdict, FactCheckLanguage } from './prompt';
+import {
+  FactCheckResult,
+  FactCheckResultWithProvider,
+  Verdict,
+  FactCheckLanguage,
+} from './prompt';
 import { runFactCheckPipeline, MAX_FACTCHECK_MS } from './pipeline';
 import { normalizeFactCheckConfigs } from './storage';
 
@@ -24,10 +29,6 @@ const VERDICT_LABEL: Record<Verdict, string> = {
   credible: 'Credible',
   misleading: 'Misleading',
   unverified: 'Unverified',
-};
-
-type FactCheckResultWithProvider = FactCheckResult & {
-  provider?: string | null;
 };
 
 type Props = {
@@ -199,7 +200,7 @@ const FactCheck: React.FC<Props> = ({ text, enabled, onFactCheck }) => {
       } else {
         setResult(res);
         // Surface which provider actually answered (may be a fallback).
-        setProvider((res as any).provider ?? null);
+        setProvider(res.provider ?? null);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));

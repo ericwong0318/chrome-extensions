@@ -17,7 +17,10 @@
  * definitive verdict.
  */
 
-import { FactCheckLanguage, FactCheckResult } from './prompt';
+import {
+  FactCheckLanguage,
+  FactCheckResultWithProvider,
+} from './prompt';
 import { parse } from './agents/Parser';
 import { runLogic } from './agents/Logic';
 import { analyzeBias } from './agents/Bias';
@@ -34,11 +37,12 @@ export const MAX_FACTCHECK_MS = 9000;
  * @param text        The raw Zhihu answer/question text.
  * @param language    UI language selected by the user.
  * @param onFactCheck Callback that talks to the background worker and returns
- *                    a {@link FactCheckResult} (or an error object). It streams
- *                    per-attempt stages (and fallback/recount flags) via onStage.
+ *                    a {@link FactCheckResultWithProvider} (or an error object).
+ *                    It streams per-attempt stages (and fallback/recount flags)
+ *                    via onStage.
  * @param onStage     Optional callback reporting the current pipeline stage so
  *                    the UI can show a "thinking" progress indicator.
- * @returns           A promise resolving to the final {@link FactCheckResult}.
+ * @returns           A promise resolving to the final {@link FactCheckResultWithProvider}.
  */
 export const runFactCheckPipeline = async (
   text: string,
@@ -46,9 +50,9 @@ export const runFactCheckPipeline = async (
   onFactCheck: (
     t: string,
     onStage?: (stage: string, isRetry?: boolean) => void,
-  ) => Promise<FactCheckResult | { error: string }>,
+  ) => Promise<FactCheckResultWithProvider | { error: string }>,
   onStage?: (stage: string, isRetry?: boolean) => void,
-): Promise<FactCheckResult> => {
+): Promise<FactCheckResultWithProvider> => {
   // 1️⃣ Parser – clean the input.
   onStage?.('Parsing text…', false);
   const parsed = parse(text, language);

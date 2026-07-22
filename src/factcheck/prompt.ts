@@ -43,6 +43,14 @@ export type FactCheckResult = {
   sources?: { title: string; url: string }[];
 };
 
+/**
+ * FactCheckResult augmented with the name of the provider that actually
+ * answered (may be a fallback when the primary provider timed out).
+ */
+export type FactCheckResultWithProvider = FactCheckResult & {
+  provider?: string | null;
+};
+
 export const SYSTEM_PROMPT = `You are a rigorous critical-thinking assistant that fact-checks and analyzes an argument written in an answer or question. You never invent facts. When you cannot verify a claim, say so explicitly.
 
 Analyze the user's text through THREE lenses and respond with ONLY a JSON object (no markdown, no code fences) matching exactly this shape:
