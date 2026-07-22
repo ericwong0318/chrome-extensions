@@ -68,28 +68,6 @@ const getZhihuContent = (): ZhihuContent[] => {
 
 const INLINE_CLASS = 'zhihu-block-inline';
 
-// Walk the element's descendants and return the first non-empty text node,
-// skipping <script> and <style> subtrees. Used to anchor the fact-check button
-// at the real start of the post's text rather than the top of the whole block.
-const getFirstTextNode = (element: HTMLElement): Text | null => {
-  const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT, {
-    acceptNode(node) {
-      const parent = node.parentElement;
-      if (
-        parent &&
-        (parent.tagName === 'SCRIPT' || parent.tagName === 'STYLE')
-      ) {
-        return NodeFilter.FILTER_REJECT;
-      }
-      if (node.textContent && node.textContent.trim().length > 0) {
-        return NodeFilter.FILTER_ACCEPT;
-      }
-      return NodeFilter.FILTER_SKIP;
-    },
-  });
-  return walker.nextNode() as Text | null;
-};
-
 const getZhihuUsers = () => {
   try {
     // Try to find user cards or author links on Zhihu answers/comments
@@ -130,11 +108,10 @@ const setUserContentHidden = (user: ZhihuUser, hidden: boolean) => {
 
 // Inline controls rendered next to each user's name using MUI defaults.
 const InlineControls: React.FC<{
-  user: ZhihuUser;
   isBlocked: boolean;
   onBlock: () => void;
   onUnblock: () => void;
-}> = ({ user, isBlocked, onBlock, onUnblock }) => (
+}> = ({ isBlocked, onBlock, onUnblock }) => (
   <Box
     className={INLINE_CLASS}
     sx={{
@@ -156,6 +133,13 @@ const InlineControls: React.FC<{
     )}
   </Box>
 );
+
+// Messages received over the 'factCheck' port from the background worker.
+type FactCheckPortResponse =
+  | { stage: string; isRetry?: boolean }
+  | { disabled: true }
+  | { error: string }
+  | { result: FactCheckResult; provider?: string };
 
 const Blocker: React.FC = () => {
   const [blocked, setBlocked] = useState<BlockedUser[]>([]);
@@ -252,27 +236,27 @@ const Blocker: React.FC = () => {
         }
         resolve(value);
       };
-      port.onMessage.addListener((response: any) => {
+      port.onMessage.addListener((response: FactCheckPortResponse) => {
         if (!response) {
           finish({ error: 'No response from background.' });
           return;
         }
         // Streamed stage update from the background (provider/model + fallback).
-        if (response.stage) {
+        if ('stage' in response) {
           onStage?.(response.stage, !!response.isRetry);
           return; // not the final response; keep waiting.
         }
-        if (response.disabled) {
+        if ('disabled' in response) {
           finish({ error: 'No fact-check provider configured in Options.' });
           return;
         }
-        if (response.error) {
+        if ('error' in response) {
           // Background reports a definitive error only after all providers
           // (and their per-attempt 9s windows) have been exhausted.
           finish({ error: response.error });
           return;
         }
-        finish(response.result as FactCheckResult);
+        finish(response.result);
       });
       port.onDisconnect.addListener(() => {
         if (chrome.runtime.lastError) {
@@ -484,7 +468,6 @@ const Blocker: React.FC = () => {
           const isBlocked = blocked.some((u) => u.id === user.id);
           return createPortal(
             <InlineControls
-              user={user}
               isBlocked={isBlocked}
               onBlock={() => blockUser(user.id, user.name)}
               onUnblock={() => unblockUser(user.id)}

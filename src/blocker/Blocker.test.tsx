@@ -10,6 +10,15 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import Blocker from './Blocker';
 import { mockChromeStorage } from '../test/setup';
 
+type BlockedUser = { id: string; name: string };
+type BlockedUsersResult = { zhihuBlockedUsers: BlockedUser[] };
+
+// Minimal chrome mock shape used by these tests.
+type ChromeMock = {
+  storage: typeof mockChromeStorage;
+  runtime: { sendMessage: ReturnType<typeof vi.fn> };
+};
+
 // Build a minimal fake Zhihu DOM. The content script's getZhihuUsers() only
 // matches .UserLink-link inside an .AuthorInfo-head (or data-za-detail-view-path)
 // ancestor, so we mirror that structure here.
@@ -57,7 +66,7 @@ function seedAnswerDom() {
 }
 
 beforeEach(() => {
-  (global as any).chrome = {
+  (global as unknown as { chrome: ChromeMock }).chrome = {
     storage: mockChromeStorage,
     runtime: { sendMessage: vi.fn() },
   };
@@ -94,7 +103,7 @@ describe('Blocker (unit)', () => {
     });
     const stored = (await mockChromeStorage.sync.get({
       zhihuBlockedUsers: [],
-    })) as any;
+    })) as BlockedUsersResult;
     expect(stored.zhihuBlockedUsers).toHaveLength(1);
     expect(stored.zhihuBlockedUsers[0].id).toBe('/people/alice');
   });
@@ -122,7 +131,7 @@ describe('Blocker (unit)', () => {
     await waitFor(() => expect(listItem.style.display).toBe(''));
     const stored = (await mockChromeStorage.sync.get({
       zhihuBlockedUsers: [],
-    })) as any;
+    })) as BlockedUsersResult;
     expect(stored.zhihuBlockedUsers).toHaveLength(0);
   });
 
@@ -153,7 +162,7 @@ describe('Blocker (unit)', () => {
   });
 
   it('re-enables Fact Check when provider config is added via storage change', async () => {
-    const { link } = seedAnswerDom();
+    seedAnswerDom();
 
     await mockChromeStorage.sync.set({
       factCheckConfigs: null,
