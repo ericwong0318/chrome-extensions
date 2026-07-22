@@ -1,15 +1,29 @@
 import { logError } from './logger';
-import { callProviders, FactCheckConfig } from './factcheck/providers';
+import { callProviders } from './factcheck/providers';
 import { normalizeFactCheckConfigs } from './factcheck/storage';
+import type { Request } from './types/request'
+export { };
 
-export {};
+/** Message sent over the 'factCheck' port from the content script. */
+interface FactCheckPortMessage {
+  text: string;
+}
+
+/** Type guard that validates an unknown port message at runtime. */
+function isFactCheckPortMessage(msg: unknown): msg is FactCheckPortMessage {
+  return (
+    typeof msg === 'object' &&
+    msg !== null &&
+    typeof (msg as FactCheckPortMessage).text === 'string'
+  );
+}
 
 // Open the options page (block list) when the extension icon is clicked.
 chrome.action.onClicked.addListener(() => {
   chrome.runtime.openOptionsPage();
 });
 
-chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+chrome.runtime.onMessage.addListener((request: Request, sender, sendResponse) => {
   try {
     if (request.action === 'blockUser') {
       // Store blocked users as {id, name} objects for a richer block list
@@ -103,8 +117,8 @@ if (chrome.runtime.onConnect) {
   chrome.runtime.onConnect.addListener((port) => {
     if (port.name !== 'factCheck') return;
 
-    port.onMessage.addListener((msg: any) => {
-      if (!msg || typeof msg.text !== 'string') return;
+    port.onMessage.addListener((msg: unknown) => {
+      if (!isFactCheckPortMessage(msg)) return;
       chrome.storage.sync.get(
         {
           factCheckConfigs: null,
