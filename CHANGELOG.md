@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.4.1](https://github.com/ericwong0318/chrome-extensions/compare/v1.4.0...v1.4.1) (2026-07-22)
+
+
+### Bug Fixes
+
+* correct space formatting of agent descriptions in Bias, Logic, and Parser files ([e778920](https://github.com/ericwong0318/chrome-extensions/commit/e77892007c55d3fa330408bc65db35f9b99955ae))
+* update Stack and TextField components for better styling and input handling ([a7e9890](https://github.com/ericwong0318/chrome-extensions/commit/a7e9890a40719c07e36186568fb681ea25c79ab4))
+
 ## [1.4.0](https://github.com/ericwong0318/chrome-extensions/compare/v1.3.1...v1.4.0) (2026-07-22)
 
 
