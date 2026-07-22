@@ -1,5 +1,5 @@
 /**
- * Agent 2 – Formal Logician & Fact‑Checker
+ * Agent 2 – Formal Logician & Fact‑Checker
  *
  * This placeholder implementation receives the parsed input from the Parser
  * agent and forwards the cleaned text to the next stage. In a full

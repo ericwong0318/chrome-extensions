@@ -1,5 +1,5 @@
 /**
- * Agent 3 – Fallacy & Rhetorical Analyst
+ * Agent 3 – Fallacy & Rhetorical Analyst
  *
  * This placeholder receives the raw AI response (or the cleaned text if the
  * previous step is a no‑op) and would normally extract rhetorical information

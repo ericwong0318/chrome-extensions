@@ -1,5 +1,5 @@
 /**
- * Agent 1 – De‑Noiser & Claim Extractor
+ * Agent 1 – De‑Noiser & Claim Extractor
  *
  * This module provides a very lightweight implementation that prepares the
  * raw Zhihu answer text for downstream processing. In a full implementation
