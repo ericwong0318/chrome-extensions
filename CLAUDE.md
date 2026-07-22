@@ -26,7 +26,8 @@ Run these before considering any task done or making a commit:
 * **Watch Mode:** `npm run test:watch`
 * **E2E Tests (Playwright):** `npx playwright test` — **run `npm run build` first**
 
-> Linting/formatting uses ESLint + Prettier configs (no `npm run lint` script yet — run via your editor or `npx eslint`).
+> **Linting:** `npm run lint` (runs `eslint .` with flat config `eslint.config.mjs`)
+> **Formatting:** Prettier via `.prettierrc.json` — `eslint-config-prettier` disables conflicting ESLint rules.
 
 ## 📐 Project Structure & Map
 
