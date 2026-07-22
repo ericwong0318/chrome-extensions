@@ -41,6 +41,17 @@ export default tseslint.config(
       'react/prop-types': 'off',
     },
   },
+  // TypeScript-specific rule overrides
+  {
+    rules: {
+      // Downgrade strict TypeScript rules to warnings so they don't break your workflow
+      '@typescript-eslint/no-unused-vars': [
+        'warn',
+        { argsIgnorePattern: '^_' },
+      ],
+      '@typescript-eslint/no-explicit-any': 'warn',
+    },
+  },
   // React hooks
   {
     plugins: {
