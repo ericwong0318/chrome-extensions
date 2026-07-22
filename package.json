@@ -3,12 +3,13 @@
   "version": "1.4.0",
   "private": true,
   "scripts": {
-    "build": "vite build",
-    "dev": "vite --mode development",
+    "dev": "vite",
+    "build": "tsc && vite build",
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
-    "lint": "eslint ."
+    "lint": "eslint . --max-warnings 0",
+    "lint:fix": "eslint . --fix"
   },
   "overrides": {
     "convert-source-map": "2.0.0"
