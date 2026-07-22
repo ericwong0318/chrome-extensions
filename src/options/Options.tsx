@@ -40,7 +40,7 @@ type ProviderConfig = {
 };
 
 const PROVIDER_LABELS: Record<ProviderId, string> = {
-  claude: 'Claude (Anthropic)',
+  claude: 'Claude',
   local: 'Local (Ollama / Qwen / llama.cpp, free)',
   gemini: 'Gemini (Google)',
   openai: 'OpenAI',
@@ -100,9 +100,6 @@ const providerValidationError = (cfg: ProviderConfig): string => {
 
   return '';
 };
-
-const isProviderConfigValid = (cfg: ProviderConfig): boolean =>
-  !providerValidationError(cfg);
 
 const Options: React.FC = () => {
   const [blocked, setBlocked] = useState<BlockedUser[]>([]);
@@ -178,7 +175,7 @@ const Options: React.FC = () => {
     }
   };
 
-  const clearAll = () => {
+  const clearAllBlockedUsers = () => {
     setBlocked([]);
     if (typeof chrome !== 'undefined' && chrome.storage) {
       chrome.storage.sync.set({ zhihuBlockedUsers: [] });
@@ -265,7 +262,7 @@ const Options: React.FC = () => {
               variant="outlined"
               color="error"
               size="small"
-              onClick={clearAll}
+              onClick={clearAllBlockedUsers}
               sx={{ mb: 2 }}
             >
               Clear all
@@ -427,15 +424,15 @@ const Options: React.FC = () => {
                       cfg.provider === 'deepseek' ||
                       cfg.provider === 'openrouter' ||
                       cfg.provider === 'other') && (
-                      <TextField
-                        label="API Key"
-                        type="password"
-                        value={cfg.apiKey || ''}
-                        onChange={(e) =>
-                          updateProvider(idx, { apiKey: e.target.value })
-                        }
-                      />
-                    )}
+                        <TextField
+                          label="API Key"
+                          type="password"
+                          value={cfg.apiKey || ''}
+                          onChange={(e) =>
+                            updateProvider(idx, { apiKey: e.target.value })
+                          }
+                        />
+                      )}
 
                     {cfg.provider === 'other' && (
                       <TextField
@@ -534,7 +531,7 @@ const Options: React.FC = () => {
               type="number"
               fullWidth
               value={timeoutSec}
-              InputProps={{ inputProps: { min: 1, max: 120, step: 1 } }}
+              slotProps={{ htmlInput: { min: 1, max: 120, step: 1 } }}
               helperText="Each provider attempt is aborted after this many seconds; the next provider is then tried. Range 1–120."
               onChange={(e) => {
                 setFcSaved(false);

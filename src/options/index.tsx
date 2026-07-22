@@ -1,4 +1,3 @@
-import React from 'react';
 import { createRoot } from 'react-dom/client';
 import Options from './Options';
 
@@ -11,7 +10,6 @@ if (container) {
       '<pre style="color:red;white-space:pre-wrap;padding:8px;">' +
       String(err) +
       '</pre>';
-     
     console.error(err);
   }
 }

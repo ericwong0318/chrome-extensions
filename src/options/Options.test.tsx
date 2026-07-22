@@ -2,16 +2,30 @@ import {
   render,
   screen,
   fireEvent,
-  waitFor,
   cleanup,
 } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import Options from './Options';
 import { mockChromeStorage } from '../test/setup';
 import { logError, clearLogs } from '../logger';
+import { FactCheckConfig } from '../factcheck/providers';
+
+// Minimal shape of the chrome global used by these tests.
+type ChromeGlobal = {
+  storage: typeof mockChromeStorage;
+};
+
+// Helper to read a typed value back from the mock storage.
+async function getStored(
+  keys: Record<string, unknown>,
+): Promise<Record<string, unknown>> {
+  return (await mockChromeStorage.sync.get(keys)) as Record<string, unknown>;
+}
 
 beforeEach(async () => {
-  (global as any).chrome = { storage: mockChromeStorage };
+  (global as unknown as { chrome: ChromeGlobal }).chrome = {
+    storage: mockChromeStorage,
+  };
   await clearLogs();
 });
 
@@ -43,9 +57,7 @@ describe('Options (unit)', () => {
     fireEvent.click(unblockBtn);
 
     expect(await screen.findByText('No users blocked.')).toBeInTheDocument();
-    const stored = (await mockChromeStorage.sync.get({
-      zhihuBlockedUsers: [],
-    })) as any;
+    const stored = await getStored({ zhihuBlockedUsers: [] });
     expect(stored.zhihuBlockedUsers).toHaveLength(0);
   });
 
@@ -61,9 +73,7 @@ describe('Options (unit)', () => {
     fireEvent.click(screen.getByText('Clear all'));
 
     expect(await screen.findByText('No users blocked.')).toBeInTheDocument();
-    const stored = (await mockChromeStorage.sync.get({
-      zhihuBlockedUsers: [],
-    })) as any;
+    const stored = await getStored({ zhihuBlockedUsers: [] });
     expect(stored.zhihuBlockedUsers).toHaveLength(0);
   });
 
@@ -100,12 +110,11 @@ describe('Options (unit)', () => {
     fireEvent.click(zhTW);
     fireEvent.click(screen.getByText('Save'));
 
-    const stored = (await mockChromeStorage.sync.get({
-      factCheckConfigs: null,
-    })) as any;
-    expect(stored.factCheckConfigs).toHaveLength(1);
-    expect(stored.factCheckConfigs[0].provider).toBe('openai');
-    expect(stored.factCheckConfigs[0].language).toBe('zh-TW');
+    const stored = await getStored({ factCheckConfigs: null });
+    const configs = stored.factCheckConfigs as FactCheckConfig[];
+    expect(configs).toHaveLength(1);
+    expect(configs[0].provider).toBe('openai');
+    expect(configs[0].language).toBe('zh-TW');
   });
 
   it('persists multiple ordered providers and their fallback order', async () => {
@@ -118,14 +127,13 @@ describe('Options (unit)', () => {
     // The second provider select is the last "Provider" label in the document.
     const providerSelects = await screen.findAllByLabelText('Provider');
     fireEvent.mouseDown(providerSelects[1]);
-    fireEvent.click(await screen.findByText('Claude (Anthropic)'));
+    fireEvent.click(await screen.findByText('Claude'));
     fireEvent.click(screen.getByText('Save'));
 
-    const stored = (await mockChromeStorage.sync.get({
-      factCheckConfigs: null,
-    })) as any;
-    expect(stored.factCheckConfigs).toHaveLength(2);
-    expect(stored.factCheckConfigs[0].provider).toBe('openai');
-    expect(stored.factCheckConfigs[1].provider).toBe('claude');
+    const stored = await getStored({ factCheckConfigs: null });
+    const configs = stored.factCheckConfigs as FactCheckConfig[];
+    expect(configs).toHaveLength(2);
+    expect(configs[0].provider).toBe('openai');
+    expect(configs[1].provider).toBe('claude');
   });
 });
