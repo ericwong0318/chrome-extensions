@@ -127,24 +127,39 @@ const formatProviderError = (status: number, detail: string): string => {
   return `Provider returned ${status}. ${message || 'Please try again.'}`;
 };
 
+// Shape of a single content block in a Claude messages response.
+type ClaudeContentBlock = { type: string; text?: string };
+// Shape of a single part in a Gemini generateContent response.
+type GeminiPart = { text?: string };
+
 // Pull the textual completion out of each provider's response shape.
-const extractText = (provider: ProviderId, data: any): string => {
+const extractText = (provider: ProviderId, data: unknown): string => {
   if (provider === 'claude') {
     // data.content is an array of blocks; concatenate text blocks.
-    const blocks: any[] = Array.isArray(data?.content) ? data.content : [];
+    const blocks: ClaudeContentBlock[] = Array.isArray(
+      (data as { content?: unknown }).content,
+    )
+      ? (data as { content: ClaudeContentBlock[] }).content
+      : [];
     return blocks
       .filter((b) => b?.type === 'text')
-      .map((b) => b.text)
+      .map((b) => b.text ?? '')
       .join('\n');
   }
   if (provider === 'gemini') {
-    const parts: any[] = data?.candidates?.[0]?.content?.parts ?? [];
+    const parts: GeminiPart[] =
+      (data as { candidates?: Array<{ content?: { parts?: GeminiPart[] } }> })
+        ?.candidates?.[0]?.content?.parts ?? [];
     return parts.map((p) => p?.text ?? '').join('\n');
   }
   // All OpenAI-compatible providers (local, openai, deepseek, openrouter,
   // other) return choices[0].message.content.
-  return data?.choices?.[0]?.message?.content ?? '';
+  return (
+    (data as { choices?: Array<{ message?: { content?: string } }> })?.choices?.[0]
+      ?.message?.content ?? ''
+  );
 };
+
 
 // Call a SINGLE provider. Returns ok:false (never throws) so callProviders can
 // decide whether to fall back. `timeoutMs` caps this single attempt; on abort

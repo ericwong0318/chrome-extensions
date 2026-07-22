@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { callProvider, callProviders } from './providers';
+import { callProvider, callProviders, ProviderId } from './providers';
+
 import { parseResult, SYSTEM_PROMPT } from './prompt';
 
 // Mock global fetch so we can assert the request shape per provider without
@@ -7,7 +8,8 @@ import { parseResult, SYSTEM_PROMPT } from './prompt';
 const fetchMock = vi.fn();
 beforeEach(() => {
   fetchMock.mockReset();
-  (global as any).fetch = fetchMock;
+  (global as Record<string, unknown>).fetch = fetchMock as unknown as typeof fetch;
+
 });
 
 // Build a successful fetch response whose JSON body is an OpenAI-style
@@ -33,7 +35,8 @@ const okGemini = (content: string) => ({
 
 describe('callProvider', () => {
   it('returns an error when no provider is configured', async () => {
-    const res = await callProvider('some text', { provider: '' as any });
+    const res = await callProvider('some text', { provider: '' as ProviderId });
+
     expect(res.ok).toBe(false);
     if (!res.ok) expect(res.attempts).toHaveLength(0);
   });
@@ -261,8 +264,11 @@ describe('callProvider', () => {
     });
     const [, init] = fetchMock.mock.calls[0];
     const body = JSON.parse(init.body);
-    const userMsg = body.messages.find((m: any) => m.role === 'user');
+    const userMsg = body.messages.find(
+      (m: { role: string; content: string }) => m.role === 'user',
+    );
     expect(userMsg.content).toContain('中文（简体）');
+
   });
 
   it('includes an English instruction in the prompt when language is en', async () => {
@@ -274,8 +280,11 @@ describe('callProvider', () => {
     });
     const [, init] = fetchMock.mock.calls[0];
     const body = JSON.parse(init.body);
-    const userMsg = body.messages.find((m: any) => m.role === 'user');
+    const userMsg = body.messages.find(
+      (m: { role: string; content: string }) => m.role === 'user',
+    );
     expect(userMsg.content).toContain('in English');
+
   });
 });
 
@@ -361,7 +370,7 @@ describe('callProviders (fallback)', () => {
   it('skips providers with no provider selected and uses a valid one', async () => {
     fetchMock.mockResolvedValue(okOpenAi('{"verdict":"credible"}'));
     const res = await callProviders('claim', [
-      { provider: '' as any },
+      { provider: '' as ProviderId },
       { provider: 'openai', apiKey: 'oai' },
     ]);
     expect(res.ok).toBe(true);
@@ -370,6 +379,7 @@ describe('callProviders (fallback)', () => {
   });
 
   it('returns a disabled-style error when no providers are configured', async () => {
+
     const res = await callProviders('claim', []);
     expect(res.ok).toBe(false);
     if (!res.ok) {
