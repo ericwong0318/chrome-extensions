@@ -1,11 +1,1 @@
-# Cline Rules
-
-**All project rules, conventions, commands, and git/security workflow live in `CLAUDE.md`** — that file is the canonical, AI-portable source of truth. Read it first and follow it.
-
-This file only adds Claude-specific behavioral notes beyond what `CLAUDE.md` covers:
-
-## Claude-Specific Behavior
-- When the user asks for a change, prefer editing files directly with the provided tools over suggesting shell commands they must run manually.
-- Do not push to remote after every minor save; wait for a clear milestone (also stated in `CLAUDE.md`).
-- If a task depends on a data layer being rewritten elsewhere, don't push until both sides are structurally sound.
-- Keep `CLAUDE.md` in sync if you add new commands or rules.
+CLAUDE.md
