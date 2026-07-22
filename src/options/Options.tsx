@@ -313,7 +313,7 @@ const Options: React.FC = () => {
                     </Box>
                   </Box>
 
-                  <Stack spacing={2} maxWidth={420}>
+                  <Stack spacing={2} sx={{ maxWidth: 420 }}>
                     <TextField
                       select
                       label="Provider"
@@ -438,7 +438,7 @@ const Options: React.FC = () => {
               type="number"
               fullWidth
               value={timeoutSec}
-              inputProps={{ min: 1, max: 120, step: 1 }}
+              InputProps={{ inputProps: { min: 1, max: 120, step: 1 } }}
               helperText="Each provider attempt is aborted after this many seconds; the next provider is then tried. Range 1–120."
               onChange={(e) => {
                 setFcSaved(false);
