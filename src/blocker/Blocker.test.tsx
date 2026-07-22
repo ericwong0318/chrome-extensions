@@ -1,4 +1,11 @@
-import { act, render, screen, fireEvent, waitFor, cleanup } from '@testing-library/react';
+import {
+  act,
+  render,
+  screen,
+  fireEvent,
+  waitFor,
+  cleanup,
+} from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import Blocker from './Blocker';
 import { mockChromeStorage } from '../test/setup';
@@ -85,7 +92,9 @@ describe('Blocker (unit)', () => {
     await waitFor(() => {
       expect(listItem.style.display).toBe('none');
     });
-    const stored = (await mockChromeStorage.sync.get({ zhihuBlockedUsers: [] })) as any;
+    const stored = (await mockChromeStorage.sync.get({
+      zhihuBlockedUsers: [],
+    })) as any;
     expect(stored.zhihuBlockedUsers).toHaveLength(1);
     expect(stored.zhihuBlockedUsers[0].id).toBe('/people/alice');
   });
@@ -93,18 +102,27 @@ describe('Blocker (unit)', () => {
   it('unblock removes the user from storage and shows content', async () => {
     const { listItem, link } = seedZhihuDom();
     render(<Blocker />);
-    const blockBtn = await waitFor(() => (link.nextElementSibling as HTMLElement).querySelector('button') as HTMLButtonElement);
+    const blockBtn = await waitFor(
+      () =>
+        (link.nextElementSibling as HTMLElement).querySelector(
+          'button',
+        ) as HTMLButtonElement,
+    );
     fireEvent.click(blockBtn);
 
     const unblockBtn = await waitFor(() => {
-      const buttons = (link.nextElementSibling as HTMLElement).querySelectorAll('button');
+      const buttons = (link.nextElementSibling as HTMLElement).querySelectorAll(
+        'button',
+      );
       return buttons[buttons.length - 1] as HTMLButtonElement; // "Unblock"
     });
     expect(unblockBtn.textContent).toBe('Unblock');
     fireEvent.click(unblockBtn);
 
     await waitFor(() => expect(listItem.style.display).toBe(''));
-    const stored = (await mockChromeStorage.sync.get({ zhihuBlockedUsers: [] })) as any;
+    const stored = (await mockChromeStorage.sync.get({
+      zhihuBlockedUsers: [],
+    })) as any;
     expect(stored.zhihuBlockedUsers).toHaveLength(0);
   });
 
@@ -144,10 +162,19 @@ describe('Blocker (unit)', () => {
 
     render(<Blocker />);
 
-    const factCheckBtn = await waitFor(() => screen.getByText('Fact Check')) as HTMLButtonElement;
+    const factCheckBtn = (await waitFor(() =>
+      screen.getByText('Fact Check'),
+    )) as HTMLButtonElement;
     expect(factCheckBtn).toBeDisabled();
 
-    const newConfig = [{ provider: 'openai', apiKey: 'abc', model: 'gpt-4o-mini', language: 'en' }];
+    const newConfig = [
+      {
+        provider: 'openai',
+        apiKey: 'abc',
+        model: 'gpt-4o-mini',
+        language: 'en',
+      },
+    ];
     await mockChromeStorage.sync.set({ factCheckConfigs: newConfig });
     act(() => {
       mockChromeStorage.triggerOnChanged({
@@ -176,7 +203,8 @@ describe('Blocker (unit)', () => {
 
     const title = document.createElement('h2');
     title.className = 'ContentItem-title';
-    title.textContent = 'Why are politicians corrupt and what should we do about it?';
+    title.textContent =
+      'Why are politicians corrupt and what should we do about it?';
     listItem.appendChild(title);
 
     const answerCard = document.createElement('div');

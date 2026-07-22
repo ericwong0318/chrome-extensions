@@ -15,7 +15,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       // Store blocked users as {id, name} objects for a richer block list
       chrome.storage.sync.get({ zhihuBlockedUsers: [] }, (result) => {
         const list = result.zhihuBlockedUsers as { id: string; name: string }[];
-        const entry = { id: request.userId, name: request.userName || request.userId };
+        const entry = {
+          id: request.userId,
+          name: request.userName || request.userId,
+        };
         // Avoid duplicates by id
         const updated = list.some((u) => u.id === entry.id)
           ? list
@@ -40,7 +43,9 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
     if (request.action === 'getBlockedUsers') {
       chrome.storage.sync.get({ zhihuBlockedUsers: [] }, (result) => {
-        sendResponse({ users: result.zhihuBlockedUsers as { id: string; name: string }[] });
+        sendResponse({
+          users: result.zhihuBlockedUsers as { id: string; name: string }[],
+        });
       });
       return true;
     }
@@ -49,23 +54,37 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       // Legacy one-shot path: if a port is not attached, fall back to a single
       // sendResponse. (The content script now uses a long-lived port instead.)
       chrome.storage.sync.get(
-        { factCheckConfigs: null, factCheckConfig: null, factCheckTimeoutSec: 9 },
+        {
+          factCheckConfigs: null,
+          factCheckConfig: null,
+          factCheckTimeoutSec: 9,
+        },
         (result) => {
-        const configs = normalizeFactCheckConfigs(result.factCheckConfigs, result.factCheckConfig);
+          const configs = normalizeFactCheckConfigs(
+            result.factCheckConfigs,
+            result.factCheckConfig,
+          );
 
-        if (configs.length === 0) {
-          sendResponse({ disabled: true });
-          return;
-        }
+          if (configs.length === 0) {
+            sendResponse({ disabled: true });
+            return;
+          }
 
-        const timeoutSec = Math.min(Math.max(Number(result.factCheckTimeoutSec) || 9, 1), 120);
-        const timeoutMs = timeoutSec * 1000;
+          const timeoutSec = Math.min(
+            Math.max(Number(result.factCheckTimeoutSec) || 9, 1),
+            120,
+          );
+          const timeoutMs = timeoutSec * 1000;
 
-        callProviders(request.text ?? '', configs, undefined, timeoutMs).then((res) => {
-          if (res.ok) sendResponse({ result: res.result, provider: res.provider });
-          else sendResponse({ error: res.error });
-        });
-      });
+          callProviders(request.text ?? '', configs, undefined, timeoutMs).then(
+            (res) => {
+              if (res.ok)
+                sendResponse({ result: res.result, provider: res.provider });
+              else sendResponse({ error: res.error });
+            },
+          );
+        },
+      );
       return true;
     }
 
@@ -82,55 +101,79 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 // A port is required because a single sendResponse can only be called once.
 if (chrome.runtime.onConnect) {
   chrome.runtime.onConnect.addListener((port) => {
-  if (port.name !== 'factCheck') return;
+    if (port.name !== 'factCheck') return;
 
-  port.onMessage.addListener((msg: any) => {
-    if (!msg || typeof msg.text !== 'string') return;
-    chrome.storage.sync.get(
-      { factCheckConfigs: null, factCheckConfig: null, factCheckTimeoutSec: 9 },
-      (result) => {
-        const configs = normalizeFactCheckConfigs(result.factCheckConfigs, result.factCheckConfig);
+    port.onMessage.addListener((msg: any) => {
+      if (!msg || typeof msg.text !== 'string') return;
+      chrome.storage.sync.get(
+        {
+          factCheckConfigs: null,
+          factCheckConfig: null,
+          factCheckTimeoutSec: 9,
+        },
+        (result) => {
+          const configs = normalizeFactCheckConfigs(
+            result.factCheckConfigs,
+            result.factCheckConfig,
+          );
 
-        if (configs.length === 0) {
-          port.postMessage({ disabled: true });
-          return;
-        }
+          if (configs.length === 0) {
+            port.postMessage({ disabled: true });
+            return;
+          }
 
-        const timeoutSec = Math.min(Math.max(Number(result.factCheckTimeoutSec) || 9, 1), 120);
-        const timeoutMs = timeoutSec * 1000;
+          const timeoutSec = Math.min(
+            Math.max(Number(result.factCheckTimeoutSec) || 9, 1),
+            120,
+          );
+          const timeoutMs = timeoutSec * 1000;
 
-        const controller = new AbortController();
-        let portClosed = false;
-        const onDisconnect = () => {
-          portClosed = true;
-          controller.abort();
-        };
-        port.onDisconnect.addListener(onDisconnect);
+          const controller = new AbortController();
+          let portClosed = false;
+          const onDisconnect = () => {
+            portClosed = true;
+            controller.abort();
+          };
+          port.onDisconnect.addListener(onDisconnect);
 
-        const onStage = (stage: string, isRetry: boolean) => {
-          try { port.postMessage({ stage, isRetry }); } catch { /* port closed */ }
-        };
-        callProviders(msg.text, configs, onStage, timeoutMs, controller.signal)
-          .then((res) => {
-            if (portClosed) return;
+          const onStage = (stage: string, isRetry: boolean) => {
             try {
-              if (res.ok) port.postMessage({ result: res.result, provider: res.provider });
-              else port.postMessage({ error: res.error });
+              port.postMessage({ stage, isRetry });
             } catch {
               /* port closed */
             }
-          })
-          .finally(() => {
-            if (port.onDisconnect.removeListener) {
-              port.onDisconnect.removeListener(onDisconnect);
-            }
-          });
-      }
-    );
-  });
+          };
+          callProviders(
+            msg.text,
+            configs,
+            onStage,
+            timeoutMs,
+            controller.signal,
+          )
+            .then((res) => {
+              if (portClosed) return;
+              try {
+                if (res.ok)
+                  port.postMessage({
+                    result: res.result,
+                    provider: res.provider,
+                  });
+                else port.postMessage({ error: res.error });
+              } catch {
+                /* port closed */
+              }
+            })
+            .finally(() => {
+              if (port.onDisconnect.removeListener) {
+                port.onDisconnect.removeListener(onDisconnect);
+              }
+            });
+        },
+      );
+    });
 
-  port.onDisconnect.addListener(() => {
-    // Port closed by the content script; nothing to clean up.
-  });
+    port.onDisconnect.addListener(() => {
+      // Port closed by the content script; nothing to clean up.
+    });
   });
 }

@@ -1,4 +1,10 @@
-import { render, screen, fireEvent, waitFor, cleanup } from '@testing-library/react';
+import {
+  render,
+  screen,
+  fireEvent,
+  waitFor,
+  cleanup,
+} from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import Options from './Options';
 import { mockChromeStorage } from '../test/setup';
@@ -20,20 +26,26 @@ describe('Options (unit)', () => {
   });
 
   it('lists blocked users with name and id', async () => {
-    await mockChromeStorage.sync.set({ zhihuBlockedUsers: [{ id: 'u1', name: 'Alice' }] });
+    await mockChromeStorage.sync.set({
+      zhihuBlockedUsers: [{ id: 'u1', name: 'Alice' }],
+    });
     render(<Options />);
     expect(await screen.findByText('Alice')).toBeInTheDocument();
     expect(screen.getByText('u1')).toBeInTheDocument();
   });
 
   it('unblock removes a user and persists the change', async () => {
-    await mockChromeStorage.sync.set({ zhihuBlockedUsers: [{ id: 'u1', name: 'Alice' }] });
+    await mockChromeStorage.sync.set({
+      zhihuBlockedUsers: [{ id: 'u1', name: 'Alice' }],
+    });
     render(<Options />);
     const unblockBtn = await screen.findByText('Unblock');
     fireEvent.click(unblockBtn);
 
     expect(await screen.findByText('No users blocked.')).toBeInTheDocument();
-    const stored = (await mockChromeStorage.sync.get({ zhihuBlockedUsers: [] })) as any;
+    const stored = (await mockChromeStorage.sync.get({
+      zhihuBlockedUsers: [],
+    })) as any;
     expect(stored.zhihuBlockedUsers).toHaveLength(0);
   });
 
@@ -49,7 +61,9 @@ describe('Options (unit)', () => {
     fireEvent.click(screen.getByText('Clear all'));
 
     expect(await screen.findByText('No users blocked.')).toBeInTheDocument();
-    const stored = (await mockChromeStorage.sync.get({ zhihuBlockedUsers: [] })) as any;
+    const stored = (await mockChromeStorage.sync.get({
+      zhihuBlockedUsers: [],
+    })) as any;
     expect(stored.zhihuBlockedUsers).toHaveLength(0);
   });
 
@@ -86,7 +100,9 @@ describe('Options (unit)', () => {
     fireEvent.click(zhTW);
     fireEvent.click(screen.getByText('Save'));
 
-    const stored = (await mockChromeStorage.sync.get({ factCheckConfigs: null })) as any;
+    const stored = (await mockChromeStorage.sync.get({
+      factCheckConfigs: null,
+    })) as any;
     expect(stored.factCheckConfigs).toHaveLength(1);
     expect(stored.factCheckConfigs[0].provider).toBe('openai');
     expect(stored.factCheckConfigs[0].language).toBe('zh-TW');
@@ -105,7 +121,9 @@ describe('Options (unit)', () => {
     fireEvent.click(await screen.findByText('Claude (Anthropic)'));
     fireEvent.click(screen.getByText('Save'));
 
-    const stored = (await mockChromeStorage.sync.get({ factCheckConfigs: null })) as any;
+    const stored = (await mockChromeStorage.sync.get({
+      factCheckConfigs: null,
+    })) as any;
     expect(stored.factCheckConfigs).toHaveLength(2);
     expect(stored.factCheckConfigs[0].provider).toBe('openai');
     expect(stored.factCheckConfigs[1].provider).toBe('claude');

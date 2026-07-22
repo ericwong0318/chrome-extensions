@@ -20,8 +20,10 @@ export const LANGUAGE_LABELS: Record<FactCheckLanguage, string> = {
 // Human-readable instruction appended to the user prompt so the model writes
 // its prose in the chosen language while keeping the `verdict` enum English.
 const LANGUAGE_INSTRUCTION: Record<FactCheckLanguage, string> = {
-  'zh-CN': '请用中文（简体）撰写所有说明性文字（validityVsTruth、rhetoric 各字段、fallacies 的 explanation 以及 sources 的 title）。但 verdict 字段必须严格保持英文枚举值之一："credible"、"misleading" 或 "unverified"，不要翻译。',
-  'zh-TW': '請用中文（繁體）撰寫所有說明性文字（validityVsTruth、rhetoric 各欄位、fallacies 的 explanation 以及 sources 的 title）。但 verdict 欄位必須嚴格保持英文列舉值之一："credible"、"misleading" 或 "unverified"，不要翻譯。',
+  'zh-CN':
+    '请用中文（简体）撰写所有说明性文字（validityVsTruth、rhetoric 各字段、fallacies 的 explanation 以及 sources 的 title）。但 verdict 字段必须严格保持英文枚举值之一："credible"、"misleading" 或 "unverified"，不要翻译。',
+  'zh-TW':
+    '請用中文（繁體）撰寫所有說明性文字（validityVsTruth、rhetoric 各欄位、fallacies 的 explanation 以及 sources 的 title）。但 verdict 欄位必須嚴格保持英文列舉值之一："credible"、"misleading" 或 "unverified"，不要翻譯。',
   en: 'Write all explanatory prose (validityVsTruth, the rhetoric fields, each fallacy explanation, and source titles) in English. Keep the "verdict" field exactly as one of the English enum values: "credible", "misleading", or "unverified" — do not translate it.',
 };
 
@@ -65,7 +67,10 @@ Analyze the user's text through THREE lenses and respond with ONLY a JSON object
   ]
 }`;
 
-export const buildUserPrompt = (text: string, language: FactCheckLanguage = 'en'): string => {
+export const buildUserPrompt = (
+  text: string,
+  language: FactCheckLanguage = 'en',
+): string => {
   const instruction = LANGUAGE_INSTRUCTION[language] || LANGUAGE_INSTRUCTION.en;
   return `Analyze the following answer/question from a Zhihu post:\n\n"""\n${text.trim()}\n"""\n\n${instruction}`;
 };
@@ -84,7 +89,10 @@ const extractJson = (raw: string): Record<string, unknown> | null => {
     const end = candidate.lastIndexOf('}');
     if (start !== -1 && end > start) {
       try {
-        return JSON.parse(candidate.slice(start, end + 1)) as Record<string, unknown>;
+        return JSON.parse(candidate.slice(start, end + 1)) as Record<
+          string,
+          unknown
+        >;
       } catch {
         return null;
       }
@@ -99,7 +107,10 @@ const asString = (v: unknown, fallback = ''): string =>
 const asFallacies = (v: unknown): FactCheckResult['fallacies'] => {
   if (!Array.isArray(v)) return [];
   return v
-    .filter((item): item is Record<string, unknown> => typeof item === 'object' && item !== null)
+    .filter(
+      (item): item is Record<string, unknown> =>
+        typeof item === 'object' && item !== null,
+    )
     .map((item) => ({
       name: asString(item.name),
       quote: asString(item.quote),
@@ -110,7 +121,10 @@ const asFallacies = (v: unknown): FactCheckResult['fallacies'] => {
 const asSources = (v: unknown): FactCheckResult['sources'] => {
   if (!Array.isArray(v)) return undefined;
   const out = v
-    .filter((item): item is Record<string, unknown> => typeof item === 'object' && item !== null)
+    .filter(
+      (item): item is Record<string, unknown> =>
+        typeof item === 'object' && item !== null,
+    )
     .map((item) => ({ title: asString(item.title), url: asString(item.url) }))
     .filter((s) => s.url);
   return out.length ? out : undefined;

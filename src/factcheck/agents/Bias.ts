@@ -15,7 +15,10 @@ import { FactCheckLanguage } from '../prompt';
  * @param _language   UI language – currently unused.
  * @returns           The same string – placeholder for future processing.
  */
-export const analyzeBias = (rawResponse: string, _language: FactCheckLanguage = 'en'): string => {
+export const analyzeBias = (
+  rawResponse: string,
+  _language: FactCheckLanguage = 'en',
+): string => {
   // No‑op placeholder – replace with real NLP analysis when ready.
   return rawResponse;
 };

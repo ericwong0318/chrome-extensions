@@ -4,8 +4,15 @@ import { normalizeFactCheckConfigs } from './storage';
 describe('normalizeFactCheckConfigs', () => {
   it('returns the configured providers when factCheckConfigs is present', () => {
     const configs = normalizeFactCheckConfigs(
-      [{ provider: 'openai', apiKey: 'abc', model: 'gpt-4o-mini', language: 'zh-TW' }],
-      null
+      [
+        {
+          provider: 'openai',
+          apiKey: 'abc',
+          model: 'gpt-4o-mini',
+          language: 'zh-TW',
+        },
+      ],
+      null,
     );
 
     expect(configs).toEqual([
@@ -38,8 +45,11 @@ describe('normalizeFactCheckConfigs', () => {
 
   it('ignores invalid provider entries and falls back to legacy config', () => {
     const configs = normalizeFactCheckConfigs(
-      [{ provider: '', apiKey: 'invalid' }, { provider: 'unknown', apiKey: 'invalid' }],
-      { provider: 'openai', apiKey: 'good', model: 'gpt-4o-mini' }
+      [
+        { provider: '', apiKey: 'invalid' },
+        { provider: 'unknown', apiKey: 'invalid' },
+      ],
+      { provider: 'openai', apiKey: 'good', model: 'gpt-4o-mini' },
     );
 
     expect(configs).toEqual([
@@ -52,7 +62,10 @@ describe('normalizeFactCheckConfigs', () => {
   });
 
   it('returns an empty array if no valid configs exist', () => {
-    const configs = normalizeFactCheckConfigs(null, { provider: '', apiKey: 'invalid' });
+    const configs = normalizeFactCheckConfigs(null, {
+      provider: '',
+      apiKey: 'invalid',
+    });
     expect(configs).toEqual([]);
   });
 });

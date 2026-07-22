@@ -29,7 +29,9 @@ const CONTENT_SELECTORS = [
 // per answer (preferring the element with the most text / a real data-id).
 const getZhihuContent = (): ZhihuContent[] => {
   try {
-    const nodes = Array.from(document.querySelectorAll(CONTENT_SELECTORS.join(',')));
+    const nodes = Array.from(
+      document.querySelectorAll(CONTENT_SELECTORS.join(',')),
+    );
     const byAnchor = new Map<HTMLElement, ZhihuContent>();
     nodes.forEach((el) => {
       const node = el as HTMLElement;
@@ -48,7 +50,10 @@ const getZhihuContent = (): ZhihuContent[] => {
       } else {
         // Merge: keep the longer text and prefer an element that has a data-id.
         if (text.length > existing.text.length) existing.text = text;
-        if (!existing.element.getAttribute('data-id') && node.getAttribute('data-id')) {
+        if (
+          !existing.element.getAttribute('data-id') &&
+          node.getAttribute('data-id')
+        ) {
           existing.element = node;
           existing.id = node.getAttribute('data-id') || existing.id;
         }
@@ -70,7 +75,10 @@ const getFirstTextNode = (element: HTMLElement): Text | null => {
   const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT, {
     acceptNode(node) {
       const parent = node.parentElement;
-      if (parent && (parent.tagName === 'SCRIPT' || parent.tagName === 'STYLE')) {
+      if (
+        parent &&
+        (parent.tagName === 'SCRIPT' || parent.tagName === 'STYLE')
+      ) {
         return NodeFilter.FILTER_REJECT;
       }
       if (node.textContent && node.textContent.trim().length > 0) {
@@ -85,7 +93,11 @@ const getFirstTextNode = (element: HTMLElement): Text | null => {
 const getZhihuUsers = () => {
   try {
     // Try to find user cards or author links on Zhihu answers/comments
-    const userNodes = Array.from(document.querySelectorAll('[data-za-detail-view-path^="User"] a.UserLink-link, .AuthorInfo-head a.UserLink-link'));
+    const userNodes = Array.from(
+      document.querySelectorAll(
+        '[data-za-detail-view-path^="User"] a.UserLink-link, .AuthorInfo-head a.UserLink-link',
+      ),
+    );
     const users: ZhihuUser[] = [];
     userNodes.forEach((el) => {
       const name = el.textContent?.trim() || '未知用户';
@@ -93,7 +105,7 @@ const getZhihuUsers = () => {
       users.push({ name, id, element: el as HTMLElement });
     });
     // Remove duplicates by id
-    return Array.from(new Map(users.map(u => [u.id, u])).values());
+    return Array.from(new Map(users.map((u) => [u.id, u])).values());
   } catch (err) {
     logError('Failed to collect Zhihu users', String(err));
     return [];
@@ -104,7 +116,11 @@ const getZhihuUsers = () => {
 const setUserContentHidden = (user: ZhihuUser, hidden: boolean) => {
   let node: HTMLElement | null = user.element;
   while (node && node !== document.body) {
-    if (node.classList.contains('List-item') || node.classList.contains('ContentItem') || node.classList.contains('CommentItem')) {
+    if (
+      node.classList.contains('List-item') ||
+      node.classList.contains('ContentItem') ||
+      node.classList.contains('CommentItem')
+    ) {
       node.style.display = hidden ? 'none' : '';
       break;
     }
@@ -121,7 +137,13 @@ const InlineControls: React.FC<{
 }> = ({ user, isBlocked, onBlock, onUnblock }) => (
   <Box
     className={INLINE_CLASS}
-    sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5, ml: 0.75, verticalAlign: 'middle' }}
+    sx={{
+      display: 'inline-flex',
+      alignItems: 'center',
+      gap: 0.5,
+      ml: 0.75,
+      verticalAlign: 'middle',
+    }}
   >
     {!isBlocked ? (
       <Button variant="contained" color="error" size="small" onClick={onBlock}>
@@ -142,7 +164,8 @@ const Blocker: React.FC = () => {
   useEffect(() => {
     if (typeof chrome !== 'undefined' && chrome.storage) {
       chrome.storage.sync.get({ zhihuBlockedUsers: [] }, (result) => {
-        if (result.zhihuBlockedUsers) setBlocked(result.zhihuBlockedUsers as BlockedUser[]);
+        if (result.zhihuBlockedUsers)
+          setBlocked(result.zhihuBlockedUsers as BlockedUser[]);
       });
     }
   }, []);
@@ -154,19 +177,33 @@ const Blocker: React.FC = () => {
   // Load fact-check provider config to enable/disable the button. Supports both
   // the new ordered list (factCheckConfigs) and the legacy single config.
   useEffect(() => {
-    if (typeof chrome === 'undefined' || !chrome.storage || !chrome.storage.sync) return;
+    if (
+      typeof chrome === 'undefined' ||
+      !chrome.storage ||
+      !chrome.storage.sync
+    )
+      return;
 
     const loadFactCheckEnabled = () => {
-      chrome.storage.sync.get({ factCheckConfigs: null, factCheckConfig: null }, (result) => {
-        setFactCheckEnabled(
-          normalizeFactCheckConfigs(result.factCheckConfigs, result.factCheckConfig).length > 0
-        );
-      });
+      chrome.storage.sync.get(
+        { factCheckConfigs: null, factCheckConfig: null },
+        (result) => {
+          setFactCheckEnabled(
+            normalizeFactCheckConfigs(
+              result.factCheckConfigs,
+              result.factCheckConfig,
+            ).length > 0,
+          );
+        },
+      );
     };
 
     loadFactCheckEnabled();
 
-    const listener = (changes: { [key: string]: chrome.storage.StorageChange }, areaName: string) => {
+    const listener = (
+      changes: { [key: string]: chrome.storage.StorageChange },
+      areaName: string,
+    ) => {
       if (areaName !== 'sync') return;
       if (changes.factCheckConfigs || changes.factCheckConfig) {
         loadFactCheckEnabled();
@@ -192,10 +229,14 @@ const Blocker: React.FC = () => {
   // sendResponse can only be delivered once.
   const runFactCheck = (
     text: string,
-    onStage?: (stage: string, isRetry: boolean) => void
+    onStage?: (stage: string, isRetry: boolean) => void,
   ): Promise<FactCheckResult | { error: string }> => {
     return new Promise<FactCheckResult | { error: string }>((resolve) => {
-      if (typeof chrome === 'undefined' || !chrome.runtime || !chrome.runtime.connect) {
+      if (
+        typeof chrome === 'undefined' ||
+        !chrome.runtime ||
+        !chrome.runtime.connect
+      ) {
         resolve({ error: 'Extension runtime unavailable.' });
         return;
       }
@@ -204,7 +245,11 @@ const Blocker: React.FC = () => {
       const finish = (value: FactCheckResult | { error: string }) => {
         if (settled) return;
         settled = true;
-        try { port.disconnect(); } catch { /* already closed */ }
+        try {
+          port.disconnect();
+        } catch {
+          /* already closed */
+        }
         resolve(value);
       };
       port.onMessage.addListener((response: any) => {
@@ -231,7 +276,10 @@ const Blocker: React.FC = () => {
       });
       port.onDisconnect.addListener(() => {
         if (chrome.runtime.lastError) {
-          finish({ error: chrome.runtime.lastError.message || 'Fact-check connection lost.' });
+          finish({
+            error:
+              chrome.runtime.lastError.message || 'Fact-check connection lost.',
+          });
         } else if (!settled) {
           finish({ error: 'Fact-check connection closed before completion.' });
         }
@@ -276,11 +324,13 @@ const Blocker: React.FC = () => {
   }, []);
 
   const blockUser = (id: string, name: string) => {
-    if (blocked.some(u => u.id === id)) return;
+    if (blocked.some((u) => u.id === id)) return;
     const updated = [...blocked, { id, name }];
     setBlocked(updated);
     // Hide all content by this user
-    users.filter(u => u.id === id).forEach(u => setUserContentHidden(u, true));
+    users
+      .filter((u) => u.id === id)
+      .forEach((u) => setUserContentHidden(u, true));
     // Persist to chrome.storage
     if (typeof chrome !== 'undefined' && chrome.storage) {
       chrome.storage.sync.set({ zhihuBlockedUsers: updated });
@@ -289,9 +339,9 @@ const Blocker: React.FC = () => {
 
   // Unblock: permanently remove the user from the block list
   const unblockUser = (id: string) => {
-    const updated = blocked.filter(u => u.id !== id);
+    const updated = blocked.filter((u) => u.id !== id);
     setBlocked(updated);
-    const user = users.find(u => u.id === id);
+    const user = users.find((u) => u.id === id);
     if (user) setUserContentHidden(user, false);
     if (typeof chrome !== 'undefined' && chrome.storage) {
       chrome.storage.sync.set({ zhihuBlockedUsers: updated });
@@ -300,21 +350,30 @@ const Blocker: React.FC = () => {
 
   // Hide content for already-blocked users on mount
   useEffect(() => {
-    blocked.forEach(b => {
-      users.filter(u => u.id === b.id).forEach(u => setUserContentHidden(u, true));
+    blocked.forEach((b) => {
+      users
+        .filter((u) => u.id === b.id)
+        .forEach((u) => setUserContentHidden(u, true));
     });
   }, [blocked, users]);
 
   // Insert (once) an inline container right after each user's name on the page.
   // The MUI controls are rendered into these containers via portals below.
-  const [containers, setContainers] = useState<Map<string, HTMLElement>>(new Map());
+  const [containers, setContainers] = useState<Map<string, HTMLElement>>(
+    new Map(),
+  );
   useEffect(() => {
     const next = new Map<string, HTMLElement>();
     users.forEach((user) => {
       const parent = user.element.parentElement;
       if (!parent) return;
-      const escapedId = typeof CSS !== 'undefined' && CSS.escape ? CSS.escape(user.id) : user.id;
-      const existing = parent.querySelector<HTMLElement>(`.${INLINE_CLASS}[data-userid="${escapedId}"]`);
+      const escapedId =
+        typeof CSS !== 'undefined' && CSS.escape
+          ? CSS.escape(user.id)
+          : user.id;
+      const existing = parent.querySelector<HTMLElement>(
+        `.${INLINE_CLASS}[data-userid="${escapedId}"]`,
+      );
       if (existing) {
         next.set(user.id, existing);
       } else {
@@ -331,7 +390,9 @@ const Blocker: React.FC = () => {
   // Insert (once) an inline container at the top of each answer/question body
   // for the Fact Check control.
   const FACTCHECK_CLASS = 'zhihu-factcheck-inline';
-  const [fcContainers, setFcContainers] = useState<Map<string, HTMLElement>>(new Map());
+  const [fcContainers, setFcContainers] = useState<Map<string, HTMLElement>>(
+    new Map(),
+  );
   useEffect(() => {
     const next = new Map<string, HTMLElement>();
     // Track which physical spans have already been claimed by a content entry so
@@ -343,9 +404,11 @@ const Blocker: React.FC = () => {
       const parent = content.element;
       if (!parent) return;
       const escapedId =
-        typeof CSS !== 'undefined' && CSS.escape ? CSS.escape(content.id) : content.id;
+        typeof CSS !== 'undefined' && CSS.escape
+          ? CSS.escape(content.id)
+          : content.id;
       const existing = parent.querySelector<HTMLElement>(
-        `.${FACTCHECK_CLASS}[data-contentid="${escapedId}"]`
+        `.${FACTCHECK_CLASS}[data-contentid="${escapedId}"]`,
       );
       if (existing) {
         if (!claimed.has(existing)) {
@@ -367,19 +430,26 @@ const Blocker: React.FC = () => {
       // header), so resolve it robustly: prefer one inside this content, then
       // one whose user link is inside this content, then the nearest block
       // container in the document. If none exists, skip insertion.
-      let blockContainer = parent.querySelector<HTMLElement>(`.${INLINE_CLASS}`);
+      let blockContainer = parent.querySelector<HTMLElement>(
+        `.${INLINE_CLASS}`,
+      );
       if (!blockContainer) {
         const userLink = parent.querySelector<HTMLElement>('.UserLink-link');
-        if (userLink && userLink.nextElementSibling?.classList.contains(INLINE_CLASS)) {
+        if (
+          userLink &&
+          userLink.nextElementSibling?.classList.contains(INLINE_CLASS)
+        ) {
           blockContainer = userLink.nextElementSibling as HTMLElement;
         }
       }
       if (!blockContainer) {
         const candidates = Array.from(
-          document.querySelectorAll<HTMLElement>(`.${INLINE_CLASS}`)
+          document.querySelectorAll<HTMLElement>(`.${INLINE_CLASS}`),
         );
         blockContainer =
-          candidates.find((c) => content.element.contains(c.previousElementSibling)) ??
+          candidates.find((c) =>
+            content.element.contains(c.previousElementSibling),
+          ) ??
           candidates[0] ??
           null;
       }
@@ -411,7 +481,7 @@ const Blocker: React.FC = () => {
         {users.map((user) => {
           const container = containers.get(user.id);
           if (!container) return null;
-          const isBlocked = blocked.some(u => u.id === user.id);
+          const isBlocked = blocked.some((u) => u.id === user.id);
           return createPortal(
             <InlineControls
               user={user}
@@ -419,7 +489,7 @@ const Blocker: React.FC = () => {
               onBlock={() => blockUser(user.id, user.name)}
               onUnblock={() => unblockUser(user.id)}
             />,
-            container
+            container,
           );
         })}
 
@@ -432,7 +502,7 @@ const Blocker: React.FC = () => {
               enabled={factCheckEnabled}
               onFactCheck={runFactCheck}
             />,
-            container
+            container,
           );
         })}
       </>

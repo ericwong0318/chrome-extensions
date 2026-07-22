@@ -22,7 +22,11 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
 import { getLogs, clearLogs, logError, LogEntry } from '../logger';
 import { FactCheckLanguage, LANGUAGE_LABELS } from '../factcheck/prompt';
-import { FactCheckConfig, ProviderId, callProvider } from '../factcheck/providers';
+import {
+  FactCheckConfig,
+  ProviderId,
+  callProvider,
+} from '../factcheck/providers';
 import { normalizeFactCheckConfigs } from '../factcheck/storage';
 
 type BlockedUser = { id: string; name: string };
@@ -97,7 +101,8 @@ const providerValidationError = (cfg: ProviderConfig): string => {
   return '';
 };
 
-const isProviderConfigValid = (cfg: ProviderConfig): boolean => !providerValidationError(cfg);
+const isProviderConfigValid = (cfg: ProviderConfig): boolean =>
+  !providerValidationError(cfg);
 
 const Options: React.FC = () => {
   const [blocked, setBlocked] = useState<BlockedUser[]>([]);
@@ -110,25 +115,36 @@ const Options: React.FC = () => {
   // after this long and the next provider is tried as a fallback.
   const [timeoutSec, setTimeoutSec] = useState(9);
   // Per-provider connection-test status keyed by provider index.
-  const [testStatus, setTestStatus] = useState<Record<number, 'testing' | 'ok' | 'fail'>>({});
+  const [testStatus, setTestStatus] = useState<
+    Record<number, 'testing' | 'ok' | 'fail'>
+  >({});
   const [testMsg, setTestMsg] = useState<Record<number, string>>({});
 
   useEffect(() => {
     if (typeof chrome !== 'undefined' && chrome.storage) {
       chrome.storage.sync.get({ zhihuBlockedUsers: [] }, (result) => {
-        if (result.zhihuBlockedUsers) setBlocked(result.zhihuBlockedUsers as BlockedUser[]);
+        if (result.zhihuBlockedUsers)
+          setBlocked(result.zhihuBlockedUsers as BlockedUser[]);
       });
       chrome.storage.sync.get(
-        { factCheckConfigs: null, factCheckConfig: null, factCheckTimeoutSec: 9 },
+        {
+          factCheckConfigs: null,
+          factCheckConfig: null,
+          factCheckTimeoutSec: 9,
+        },
         (result) => {
-        const configs = normalizeFactCheckConfigs(result.factCheckConfigs, result.factCheckConfig);
-        if (configs.length > 0) {
-          setProviders(configs);
-        }
-        if (typeof result.factCheckTimeoutSec === 'number') {
-          setTimeoutSec(result.factCheckTimeoutSec);
-        }
-      });
+          const configs = normalizeFactCheckConfigs(
+            result.factCheckConfigs,
+            result.factCheckConfig,
+          );
+          if (configs.length > 0) {
+            setProviders(configs);
+          }
+          if (typeof result.factCheckTimeoutSec === 'number') {
+            setTimeoutSec(result.factCheckTimeoutSec);
+          }
+        },
+      );
       getLogs().then(setLogs);
     }
   }, []);
@@ -140,7 +156,7 @@ const Options: React.FC = () => {
     const clamped = Math.min(Math.max(Number(timeoutSec) || 9, 1), 120);
     chrome.storage.sync.set(
       { factCheckConfigs: toSave, factCheckTimeoutSec: clamped },
-      () => setFcSaved(true)
+      () => setFcSaved(true),
     );
   };
 
@@ -171,7 +187,9 @@ const Options: React.FC = () => {
 
   const updateProvider = (idx: number, patch: Partial<ProviderConfig>) => {
     setFcSaved(false);
-    setProviders((prev) => prev.map((p, i) => (i === idx ? { ...p, ...patch } : p)));
+    setProviders((prev) =>
+      prev.map((p, i) => (i === idx ? { ...p, ...patch } : p)),
+    );
   };
 
   const addProvider = () => {
@@ -204,7 +222,11 @@ const Options: React.FC = () => {
     setTestStatus((s) => ({ ...s, [idx]: 'testing' }));
     setTestMsg((m) => ({ ...m, [idx]: '' }));
     try {
-      const res = await callProvider('Connection test.', cfg as FactCheckConfig, 9000);
+      const res = await callProvider(
+        'Connection test.',
+        cfg as FactCheckConfig,
+        9000,
+      );
       if (res.ok) {
         setTestStatus((s) => ({ ...s, [idx]: 'ok' }));
         setTestMsg((m) => ({ ...m, [idx]: 'Connected successfully.' }));
@@ -214,7 +236,10 @@ const Options: React.FC = () => {
       }
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
-      logError(`Fact-check connection test failed for "${cfg.provider}"`, message);
+      logError(
+        `Fact-check connection test failed for "${cfg.provider}"`,
+        message,
+      );
       setTestStatus((s) => ({ ...s, [idx]: 'fail' }));
       setTestMsg((m) => ({ ...m, [idx]: message }));
     }
@@ -236,7 +261,13 @@ const Options: React.FC = () => {
           </Typography>
         ) : (
           <Box sx={{ mt: 2 }}>
-            <Button variant="outlined" color="error" size="small" onClick={clearAll} sx={{ mb: 2 }}>
+            <Button
+              variant="outlined"
+              color="error"
+              size="small"
+              onClick={clearAll}
+              sx={{ mb: 2 }}
+            >
               Clear all
             </Button>
             <List disablePadding>
@@ -245,7 +276,12 @@ const Options: React.FC = () => {
                   {idx > 0 && <Divider component="li" />}
                   <ListItem
                     secondaryAction={
-                      <Button variant="text" color="secondary" size="small" onClick={() => unblockUser(user.id)}>
+                      <Button
+                        variant="text"
+                        color="secondary"
+                        size="small"
+                        onClick={() => unblockUser(user.id)}
+                      >
                         Unblock
                       </Button>
                     }
@@ -264,12 +300,12 @@ const Options: React.FC = () => {
           Fact Check (AI)
         </Typography>
         <Typography variant="body2" color="text.secondary" gutterBottom>
-          Send an answer or question to one or more AI providers for a structured
-          analysis (Validity vs. Truth, Ethos/Pathos/Logos, and informal fallacies).
-          Providers are tried in the order listed below. If one fails (e.g. rate
-          limit, bad key, server error), the next provider is used as a fallback.
-          The API key stays in chrome.storage and is only used by the background
-          service worker.
+          Send an answer or question to one or more AI providers for a
+          structured analysis (Validity vs. Truth, Ethos/Pathos/Logos, and
+          informal fallacies). Providers are tried in the order listed below. If
+          one fails (e.g. rate limit, bad key, server error), the next provider
+          is used as a fallback. The API key stays in chrome.storage and is only
+          used by the background service worker.
         </Typography>
 
         <Box sx={{ mt: 2 }}>
@@ -284,7 +320,14 @@ const Options: React.FC = () => {
               const validationError = providerValidationError(cfg);
               return (
                 <Paper key={idx} variant="outlined" sx={{ p: 2 }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      mb: 1,
+                    }}
+                  >
                     <Chip
                       size="small"
                       color="primary"
@@ -307,7 +350,11 @@ const Options: React.FC = () => {
                       >
                         <ArrowDownwardIcon fontSize="small" />
                       </IconButton>
-                      <IconButton size="small" onClick={() => removeProvider(idx)} aria-label="Remove">
+                      <IconButton
+                        size="small"
+                        onClick={() => removeProvider(idx)}
+                        aria-label="Remove"
+                      >
                         <DeleteIcon fontSize="small" />
                       </IconButton>
                     </Box>
@@ -319,9 +366,13 @@ const Options: React.FC = () => {
                       label="Provider"
                       value={cfg.provider}
                       onChange={(e) => {
-                        const provider = e.target.value as ProviderConfig['provider'];
+                        const provider = e.target
+                          .value as ProviderConfig['provider'];
                         // Reset model placeholder hint when provider changes.
-                        updateProvider(idx, { provider, model: cfg.model || '' });
+                        updateProvider(idx, {
+                          provider,
+                          model: cfg.model || '',
+                        });
                       }}
                     >
                       <MenuItem value="">Disabled</MenuItem>
@@ -338,12 +389,34 @@ const Options: React.FC = () => {
                           label="Base URL"
                           placeholder="http://127.0.0.1:11434/v1"
                           value={cfg.baseUrl || ''}
-                          onChange={(e) => updateProvider(idx, { baseUrl: e.target.value })}
+                          onChange={(e) =>
+                            updateProvider(idx, { baseUrl: e.target.value })
+                          }
                         />
-                        <Typography variant="body2" color="text.secondary" sx={{ mt: -1, mb: 1 }}>
+                        <Typography
+                          variant="body2"
+                          color="text.secondary"
+                          sx={{ mt: -1, mb: 1 }}
+                        >
                           For Ollama: allow CORS from the extension by running
-                          <code style={{ marginLeft: '4px', fontFamily: 'monospace' }}>{'launchctl setenv OLLAMA_ORIGINS "*"'}</code>
-                          (macOS) or set <code style={{ marginLeft: '4px', fontFamily: 'monospace' }}>{'OLLAMA_ORIGINS=*'}</code> in your environment.
+                          <code
+                            style={{
+                              marginLeft: '4px',
+                              fontFamily: 'monospace',
+                            }}
+                          >
+                            {'launchctl setenv OLLAMA_ORIGINS "*"'}
+                          </code>
+                          (macOS) or set{' '}
+                          <code
+                            style={{
+                              marginLeft: '4px',
+                              fontFamily: 'monospace',
+                            }}
+                          >
+                            {'OLLAMA_ORIGINS=*'}
+                          </code>{' '}
+                          in your environment.
                         </Typography>
                       </>
                     )}
@@ -358,7 +431,9 @@ const Options: React.FC = () => {
                         label="API Key"
                         type="password"
                         value={cfg.apiKey || ''}
-                        onChange={(e) => updateProvider(idx, { apiKey: e.target.value })}
+                        onChange={(e) =>
+                          updateProvider(idx, { apiKey: e.target.value })
+                        }
                       />
                     )}
 
@@ -367,7 +442,9 @@ const Options: React.FC = () => {
                         label="Base URL"
                         placeholder="https://api.openai.com/v1"
                         value={cfg.baseUrl || ''}
-                        onChange={(e) => updateProvider(idx, { baseUrl: e.target.value })}
+                        onChange={(e) =>
+                          updateProvider(idx, { baseUrl: e.target.value })
+                        }
                       />
                     )}
 
@@ -375,30 +452,49 @@ const Options: React.FC = () => {
                       label="Model"
                       placeholder={defaultModelFor(cfg.provider)}
                       value={cfg.model || ''}
-                      onChange={(e) => updateProvider(idx, { model: e.target.value })}
+                      onChange={(e) =>
+                        updateProvider(idx, { model: e.target.value })
+                      }
                     />
 
                     <TextField
                       select
                       label="Reply language"
                       value={cfg.language || 'en'}
-                      onChange={(e) => updateProvider(idx, { language: e.target.value as FactCheckLanguage })}
+                      onChange={(e) =>
+                        updateProvider(idx, {
+                          language: e.target.value as FactCheckLanguage,
+                        })
+                      }
                     >
-                      {(Object.keys(LANGUAGE_LABELS) as FactCheckLanguage[]).map((lang) => (
+                      {(
+                        Object.keys(LANGUAGE_LABELS) as FactCheckLanguage[]
+                      ).map((lang) => (
                         <MenuItem key={lang} value={lang}>
                           {LANGUAGE_LABELS[lang]}
                         </MenuItem>
                       ))}
                     </TextField>
 
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1 }}>
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 1,
+                        mt: 1,
+                      }}
+                    >
                       <Button
                         variant="outlined"
                         size="small"
                         onClick={() => testProvider(idx)}
-                        disabled={!cfg.provider || testStatus[idx] === 'testing'}
+                        disabled={
+                          !cfg.provider || testStatus[idx] === 'testing'
+                        }
                       >
-                        {testStatus[idx] === 'testing' ? 'Testing…' : 'Test connection'}
+                        {testStatus[idx] === 'testing'
+                          ? 'Testing…'
+                          : 'Test connection'}
                       </Button>
                       {testStatus[idx] === 'ok' && (
                         <Typography variant="body2" color="success.main">
@@ -457,7 +553,11 @@ const Options: React.FC = () => {
               Save
             </Button>
             {fcSaved && (
-              <Typography variant="body2" color="success.main" sx={{ ml: 1, display: 'inline' }}>
+              <Typography
+                variant="body2"
+                color="success.main"
+                sx={{ ml: 1, display: 'inline' }}
+              >
                 Saved.
               </Typography>
             )}
@@ -478,7 +578,13 @@ const Options: React.FC = () => {
             <Button variant="outlined" size="small" onClick={refreshLogs}>
               Refresh
             </Button>
-            <Button variant="outlined" color="error" size="small" onClick={clearLog} disabled={logs.length === 0}>
+            <Button
+              variant="outlined"
+              color="error"
+              size="small"
+              onClick={clearLog}
+              disabled={logs.length === 0}
+            >
               Clear log
             </Button>
           </Box>
@@ -493,18 +599,30 @@ const Options: React.FC = () => {
                   <ListItem alignItems="flex-start">
                     <ListItemText
                       primary={
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Box
+                          sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+                        >
                           <Chip
                             label={log.level}
                             size="small"
-                            color={log.level === 'error' ? 'error' : log.level === 'warn' ? 'warning' : 'default'}
+                            color={
+                              log.level === 'error'
+                                ? 'error'
+                                : log.level === 'warn'
+                                  ? 'warning'
+                                  : 'default'
+                            }
                           />
                           <Typography component="span" variant="body2">
                             {new Date(log.time).toLocaleString()}
                           </Typography>
                         </Box>
                       }
-                      secondary={log.context ? `${log.message} (${log.context})` : log.message}
+                      secondary={
+                        log.context
+                          ? `${log.message} (${log.context})`
+                          : log.message
+                      }
                     />
                   </ListItem>
                 </React.Fragment>

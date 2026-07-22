@@ -19,7 +19,7 @@ import { ParsedInput } from './Parser';
  */
 export const runLogic = async (
   input: ParsedInput,
-  _language: FactCheckLanguage = 'en'
+  _language: FactCheckLanguage = 'en',
 ): Promise<string> => {
   // Placeholder: simply return the cleaned text.
   return input.cleanedText;

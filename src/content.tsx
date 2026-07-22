@@ -13,7 +13,9 @@ if (typeof window !== 'undefined') {
   // triggered by MUI components) — it is self-correcting and harmless.
   const isBenignError = (message?: string) =>
     !!message &&
-    (message.includes('ResizeObserver loop completed with undelivered notifications.') ||
+    (message.includes(
+      'ResizeObserver loop completed with undelivered notifications.',
+    ) ||
       message.includes('ResizeObserver loop limit exceeded'));
 
   window.addEventListener('error', (e) => {
@@ -21,7 +23,8 @@ if (typeof window !== 'undefined') {
     logError('Uncaught error in content script', e.message);
   });
   window.addEventListener('unhandledrejection', (e) => {
-    const reason = e instanceof PromiseRejectionEvent ? String(e.reason) : 'unknown';
+    const reason =
+      e instanceof PromiseRejectionEvent ? String(e.reason) : 'unknown';
     logError('Unhandled promise rejection in content script', reason);
   });
 }
@@ -42,6 +45,6 @@ if (!document.getElementById(overlayId)) {
   createRoot(reactRootAnchor).render(
     <React.StrictMode>
       <Blocker />
-    </React.StrictMode>
+    </React.StrictMode>,
   );
 }

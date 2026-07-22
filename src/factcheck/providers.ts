@@ -7,7 +7,13 @@
 // tries each in turn and falls back to the next one when a provider fails
 // (network error, bad key, rate limit, server error, etc.).
 
-import { SYSTEM_PROMPT, buildUserPrompt, parseResult, FactCheckResult, FactCheckLanguage } from './prompt';
+import {
+  SYSTEM_PROMPT,
+  buildUserPrompt,
+  parseResult,
+  FactCheckResult,
+  FactCheckLanguage,
+} from './prompt';
 import { logError, logWarn } from '../logger';
 
 export type ProviderId =
@@ -147,10 +153,14 @@ export const callProvider = async (
   text: string,
   config: FactCheckConfig,
   timeoutMs: number = DEFAULT_PROVIDER_TIMEOUT_MS,
-  signal?: AbortSignal
+  signal?: AbortSignal,
 ): Promise<FactCheckResponse> => {
   if (!config || !config.provider) {
-    return { ok: false, error: 'No fact-check provider configured.', attempts: [] };
+    return {
+      ok: false,
+      error: 'No fact-check provider configured.',
+      attempts: [],
+    };
   }
 
   const userPrompt = buildUserPrompt(text, config.language);
@@ -158,12 +168,21 @@ export const callProvider = async (
 
   try {
     let url: string;
-    let headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    let headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
     let body: string;
 
     switch (config.provider) {
       case 'claude': {
-        if (!config.apiKey) return { ok: false, error: 'Claude API key is missing.', attempts: [{ provider: 'claude', error: 'Claude API key is missing.' }] };
+        if (!config.apiKey)
+          return {
+            ok: false,
+            error: 'Claude API key is missing.',
+            attempts: [
+              { provider: 'claude', error: 'Claude API key is missing.' },
+            ],
+          };
         url = 'https://api.anthropic.com/v1/messages';
         headers['x-api-key'] = config.apiKey;
         headers['anthropic-version'] = '2023-06-01';
@@ -176,8 +195,16 @@ export const callProvider = async (
         break;
       }
       case 'gemini': {
-        if (!config.apiKey) return { ok: false, error: 'Gemini API key is missing.', attempts: [{ provider: 'gemini', error: 'Gemini API key is missing.' }] };
-        const base = config.baseUrl || 'https://generativelanguage.googleapis.com';
+        if (!config.apiKey)
+          return {
+            ok: false,
+            error: 'Gemini API key is missing.',
+            attempts: [
+              { provider: 'gemini', error: 'Gemini API key is missing.' },
+            ],
+          };
+        const base =
+          config.baseUrl || 'https://generativelanguage.googleapis.com';
         url = `${base}/v1beta/models/${model}:generateContent?key=${config.apiKey}`;
         body = JSON.stringify({
           systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
@@ -224,7 +251,14 @@ export const callProvider = async (
         break;
       }
       case 'openai': {
-        if (!config.apiKey) return { ok: false, error: 'OpenAI API key is missing.', attempts: [{ provider: 'openai', error: 'OpenAI API key is missing.' }] };
+        if (!config.apiKey)
+          return {
+            ok: false,
+            error: 'OpenAI API key is missing.',
+            attempts: [
+              { provider: 'openai', error: 'OpenAI API key is missing.' },
+            ],
+          };
         const base = (config.baseUrl || DEFAULT_OPENAI_URL).replace(/\/$/, '');
         url = `${base}/chat/completions`;
         headers.Authorization = `Bearer ${config.apiKey}`;
@@ -239,8 +273,18 @@ export const callProvider = async (
         break;
       }
       case 'deepseek': {
-        if (!config.apiKey) return { ok: false, error: 'DeepSeek API key is missing.', attempts: [{ provider: 'deepseek', error: 'DeepSeek API key is missing.' }] };
-        const base = (config.baseUrl || DEFAULT_DEEPSEEK_URL).replace(/\/$/, '');
+        if (!config.apiKey)
+          return {
+            ok: false,
+            error: 'DeepSeek API key is missing.',
+            attempts: [
+              { provider: 'deepseek', error: 'DeepSeek API key is missing.' },
+            ],
+          };
+        const base = (config.baseUrl || DEFAULT_DEEPSEEK_URL).replace(
+          /\/$/,
+          '',
+        );
         url = `${base}/chat/completions`;
         headers.Authorization = `Bearer ${config.apiKey}`;
         body = JSON.stringify({
@@ -254,8 +298,21 @@ export const callProvider = async (
         break;
       }
       case 'openrouter': {
-        if (!config.apiKey) return { ok: false, error: 'OpenRouter API key is missing.', attempts: [{ provider: 'openrouter', error: 'OpenRouter API key is missing.' }] };
-        const base = (config.baseUrl || DEFAULT_OPENROUTER_URL).replace(/\/$/, '');
+        if (!config.apiKey)
+          return {
+            ok: false,
+            error: 'OpenRouter API key is missing.',
+            attempts: [
+              {
+                provider: 'openrouter',
+                error: 'OpenRouter API key is missing.',
+              },
+            ],
+          };
+        const base = (config.baseUrl || DEFAULT_OPENROUTER_URL).replace(
+          /\/$/,
+          '',
+        );
         url = `${base}/chat/completions`;
         headers.Authorization = `Bearer ${config.apiKey}`;
         // `timeout` is a non-standard OpenRouter field (seconds) that asks the
@@ -303,8 +360,15 @@ export const callProvider = async (
           ? err.message
           : String(err);
       // Surface connection failures / timeouts so they are visible in the log.
-      logError(`Fact-check provider "${config.provider}" request failed`, error);
-      return { ok: false, error, attempts: [{ provider: config.provider, error }] };
+      logError(
+        `Fact-check provider "${config.provider}" request failed`,
+        error,
+      );
+      return {
+        ok: false,
+        error,
+        attempts: [{ provider: config.provider, error }],
+      };
     }
     window.clearTimeout(timeout);
     if (signal) signal.removeEventListener('abort', onAbort);
@@ -313,8 +377,15 @@ export const callProvider = async (
     if (!res.ok) {
       const detail = await res.text().catch(() => '');
       const error = formatProviderError(res.status, detail);
-      logWarn(`Fact-check provider "${config.provider}" returned an error`, error);
-      return { ok: false, error, attempts: [{ provider: config.provider, error }] };
+      logWarn(
+        `Fact-check provider "${config.provider}" returned an error`,
+        error,
+      );
+      return {
+        ok: false,
+        error,
+        attempts: [{ provider: config.provider, error }],
+      };
     }
 
     const data = await res.json();
@@ -322,7 +393,11 @@ export const callProvider = async (
     return { ok: true, result: parseResult(raw), provider: config.provider };
   } catch (err) {
     const error = err instanceof Error ? err.message : String(err);
-    return { ok: false, error, attempts: [{ provider: config.provider, error }] };
+    return {
+      ok: false,
+      error,
+      attempts: [{ provider: config.provider, error }],
+    };
   }
 };
 
@@ -341,7 +416,7 @@ export const callProviders = async (
   configs: FactCheckConfig[],
   onStage?: StageReporter,
   timeoutMs: number = DEFAULT_PROVIDER_TIMEOUT_MS,
-  signal?: AbortSignal
+  signal?: AbortSignal,
 ): Promise<FactCheckResponse> => {
   const attempts: ProviderAttempt[] = [];
   let isRetry = false;
@@ -357,7 +432,11 @@ export const callProviders = async (
     if (signal?.aborted) {
       return res.ok
         ? res
-        : { ok: false, error: 'Fact-check request cancelled.', attempts: [...attempts, ...res.attempts] };
+        : {
+            ok: false,
+            error: 'Fact-check request cancelled.',
+            attempts: [...attempts, ...res.attempts],
+          };
     }
     if (res.ok) return res;
     attempts.push(...res.attempts);
@@ -367,10 +446,16 @@ export const callProviders = async (
   }
 
   if (attempts.length === 0) {
-    return { ok: false, error: 'No fact-check provider configured.', attempts: [] };
+    return {
+      ok: false,
+      error: 'No fact-check provider configured.',
+      attempts: [],
+    };
   }
 
-  const summary = attempts.map((a) => `${a.provider}: ${a.error}`).join('  •  ');
+  const summary = attempts
+    .map((a) => `${a.provider}: ${a.error}`)
+    .join('  •  ');
   return {
     ok: false,
     error: `All providers failed. ${summary}`,

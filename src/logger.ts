@@ -10,7 +10,8 @@ export type LogEntry = {
 const STORAGE_KEY = 'zhihuErrorLog';
 const MAX_ENTRIES = 200;
 
-const hasChrome = () => typeof chrome !== 'undefined' && !!chrome.storage && !!chrome.storage.local;
+const hasChrome = () =>
+  typeof chrome !== 'undefined' && !!chrome.storage && !!chrome.storage.local;
 
 // In-memory buffer is the source of truth. All reads/writes are serialized
 // through `chain` so rapid calls can't clobber each other (chrome.storage
@@ -53,13 +54,16 @@ const add = (level: LogLevel, message: string, context?: string) => {
     loadFromStorage().then(() => {
       buffer = [...buffer, entry].slice(-MAX_ENTRIES);
       persist();
-    })
+    }),
   );
 };
 
-export const logError = (message: string, context?: string) => add('error', message, context);
-export const logWarn = (message: string, context?: string) => add('warn', message, context);
-export const logInfo = (message: string, context?: string) => add('info', message, context);
+export const logError = (message: string, context?: string) =>
+  add('error', message, context);
+export const logWarn = (message: string, context?: string) =>
+  add('warn', message, context);
+export const logInfo = (message: string, context?: string) =>
+  add('info', message, context);
 
 export const getLogs = (): Promise<LogEntry[]> => {
   chain = chain.then(() => loadFromStorage().then(() => buffer));

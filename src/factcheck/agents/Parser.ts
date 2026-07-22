@@ -27,7 +27,10 @@ export type ParsedInput = {
  * @param _lang The language selected UI language (currently unused).
  * @returns     An object containing the cleaned text and any extracted resources.
  */
-export const parse = (raw: string, _lang: FactCheckLanguage = 'en'): ParsedInput => {
+export const parse = (
+  raw: string,
+  _lang: FactCheckLanguage = 'en',
+): ParsedInput => {
   // Very simple cleaning: trim whitespace and collapse multiple line breaks.
   const cleaned = raw.trim().replace(/\n{2,}/g, '\n');
 

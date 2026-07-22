@@ -17,7 +17,8 @@ const isProviderId = (value: unknown): value is ProviderId =>
   typeof value === 'string' && KNOWN_PROVIDERS.includes(value as ProviderId);
 
 const isFactCheckLanguage = (value: unknown): value is FactCheckLanguage =>
-  typeof value === 'string' && KNOWN_LANGUAGES.includes(value as FactCheckLanguage);
+  typeof value === 'string' &&
+  KNOWN_LANGUAGES.includes(value as FactCheckLanguage);
 
 const normalizeRawConfig = (raw: unknown): FactCheckConfig | null => {
   if (!raw || typeof raw !== 'object') return null;
@@ -29,13 +30,15 @@ const normalizeRawConfig = (raw: unknown): FactCheckConfig | null => {
     apiKey: typeof config.apiKey === 'string' ? config.apiKey : undefined,
     model: typeof config.model === 'string' ? config.model : undefined,
     baseUrl: typeof config.baseUrl === 'string' ? config.baseUrl : undefined,
-    language: isFactCheckLanguage(config.language) ? config.language : undefined,
+    language: isFactCheckLanguage(config.language)
+      ? config.language
+      : undefined,
   };
 };
 
 export const normalizeFactCheckConfigs = (
   configs: unknown,
-  legacyConfig?: unknown
+  legacyConfig?: unknown,
 ): FactCheckConfig[] => {
   const normalized: FactCheckConfig[] = Array.isArray(configs)
     ? configs
@@ -53,5 +56,5 @@ export const normalizeFactCheckConfigs = (
 
 export const hasFactCheckConfigs = (
   configs: unknown,
-  legacyConfig?: unknown
+  legacyConfig?: unknown,
 ): boolean => normalizeFactCheckConfigs(configs, legacyConfig).length > 0;

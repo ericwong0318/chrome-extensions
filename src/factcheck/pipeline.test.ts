@@ -8,7 +8,13 @@ describe('Fact-Check Multi-Agent Pipeline', () => {
     const mockJson = JSON.stringify({
       validityVsTruth: 'Valid but biased arguments',
       rhetoric: { ethos: 'High', pathos: 'Medium', logos: 'Low' },
-      fallacies: [{ name: 'False dilemma', quote: 'either/or', explanation: 'Oversimplifies options' }],
+      fallacies: [
+        {
+          name: 'False dilemma',
+          quote: 'either/or',
+          explanation: 'Oversimplifies options',
+        },
+      ],
       verdict: 'misleading',
     });
 
@@ -46,7 +52,9 @@ describe('Fact-Check Multi-Agent Pipeline', () => {
 
   it('returns appropriate unverified error layout when provider returns error', async () => {
     const rawText = 'Another raw text';
-    const onFactCheckMock = vi.fn().mockResolvedValue({ error: 'Failed to fetch model output' });
+    const onFactCheckMock = vi
+      .fn()
+      .mockResolvedValue({ error: 'Failed to fetch model output' });
 
     const result = await runFactCheckPipeline(rawText, 'en', onFactCheckMock);
 

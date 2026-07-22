@@ -45,9 +45,9 @@ export const runFactCheckPipeline = async (
   language: FactCheckLanguage,
   onFactCheck: (
     t: string,
-    onStage?: (stage: string, isRetry?: boolean) => void
+    onStage?: (stage: string, isRetry?: boolean) => void,
   ) => Promise<FactCheckResult | { error: string }>,
-  onStage?: (stage: string, isRetry?: boolean) => void
+  onStage?: (stage: string, isRetry?: boolean) => void,
 ): Promise<FactCheckResult> => {
   // 1️⃣ Parser – clean the input.
   onStage?.('Parsing text…', false);
@@ -66,7 +66,11 @@ export const runFactCheckPipeline = async (
   const finalResult = synthesize(biasOutput, language);
 
   // If the Critic produced a valid result (i.e., it could parse JSON and has a definitive verdict), return it.
-  if (finalResult && finalResult.verdict && finalResult.verdict !== 'unverified') {
+  if (
+    finalResult &&
+    finalResult.verdict &&
+    finalResult.verdict !== 'unverified'
+  ) {
     return finalResult;
   }
 

@@ -38,10 +38,10 @@ type Props = {
   // Talks to the background service worker. Accepts an onStage callback so the
   // UI can show which provider/model is being contacted and recount its timer
   // when the pipeline falls back to the next provider.
-    onFactCheck: (
-      text: string,
-      onStage?: (stage: string, isRetry?: boolean) => void
-    ) => Promise<FactCheckResultWithProvider | { error: string }>;
+  onFactCheck: (
+    text: string,
+    onStage?: (stage: string, isRetry?: boolean) => void,
+  ) => Promise<FactCheckResultWithProvider | { error: string }>;
 };
 
 const Section: React.FC<{ title: string; body: string }> = ({ title, body }) =>
@@ -66,21 +66,35 @@ const FactCheck: React.FC<Props> = ({ text, enabled, onFactCheck }) => {
   const [progress, setProgress] = useState(0);
   const [stage, setStage] = useState<string>('');
   // The primary (first) configured provider, used to label the live stage.
-  const [providerInfo, setProviderInfo] = useState<{ provider?: string; model?: string } | null>(null);
+  const [providerInfo, setProviderInfo] = useState<{
+    provider?: string;
+    model?: string;
+  } | null>(null);
   // Per-attempt timeout (ms) from the Options page; drives the progress bar.
   const [timeoutMs, setTimeoutMs] = useState(MAX_FACTCHECK_MS);
 
   useEffect(() => {
-    if (typeof chrome === 'undefined' || !chrome.storage || !chrome.storage.sync) return;
+    if (
+      typeof chrome === 'undefined' ||
+      !chrome.storage ||
+      !chrome.storage.sync
+    )
+      return;
 
     const applyProviderConfig = (stored: {
       factCheckConfigs: unknown | null;
       factCheckConfig: unknown | null;
     }) => {
-      const configs = normalizeFactCheckConfigs(stored.factCheckConfigs, stored.factCheckConfig);
+      const configs = normalizeFactCheckConfigs(
+        stored.factCheckConfigs,
+        stored.factCheckConfig,
+      );
       if (configs.length > 0) {
         setLanguage(configs[0].language || 'en');
-        setProviderInfo({ provider: configs[0].provider, model: configs[0].model });
+        setProviderInfo({
+          provider: configs[0].provider,
+          model: configs[0].model,
+        });
       } else {
         setLanguage('en');
         setProviderInfo(null);
@@ -101,10 +115,13 @@ const FactCheck: React.FC<Props> = ({ text, enabled, onFactCheck }) => {
       }) => {
         applyProviderConfig(result);
         applyTimeout(result.factCheckTimeoutSec);
-      }
+      },
     );
 
-    const listener = (changes: { [key: string]: chrome.storage.StorageChange }, area: string) => {
+    const listener = (
+      changes: { [key: string]: chrome.storage.StorageChange },
+      area: string,
+    ) => {
       if (area !== 'sync') return;
 
       if (changes.factCheckConfigs || changes.factCheckConfig) {
@@ -116,7 +133,10 @@ const FactCheck: React.FC<Props> = ({ text, enabled, onFactCheck }) => {
       }
 
       if (changes.factCheckTimeoutSec) {
-        const sec = Math.min(Math.max(Number(changes.factCheckTimeoutSec.newValue) || 9, 1), 120);
+        const sec = Math.min(
+          Math.max(Number(changes.factCheckTimeoutSec.newValue) || 9, 1),
+          120,
+        );
         setTimeoutMs(sec * 1000);
       }
     };
@@ -141,33 +161,42 @@ const FactCheck: React.FC<Props> = ({ text, enabled, onFactCheck }) => {
     // provider attempt gets its own full-duration countdown.
     const tick = Math.max(50, Math.floor(timeoutMs / 100));
     const timer = window.setInterval(() => {
-      setProgress((prev) => (prev >= 100 ? 100 : prev + 100 * (tick / timeoutMs)));
+      setProgress((prev) =>
+        prev >= 100 ? 100 : prev + 100 * (tick / timeoutMs),
+      );
     }, tick);
     try {
-        const onStage = (s: string, isRetry?: boolean) => {
-          // When a fallback to another provider happens, recount the progress
-          // bar so each attempt gets its own 9 seconds.
-          if (isRetry) {
-            setProgress(0);
-            setStage('Retrying with another provider…');
+      const onStage = (s: string, isRetry?: boolean) => {
+        // When a fallback to another provider happens, recount the progress
+        // bar so each attempt gets its own 9 seconds.
+        if (isRetry) {
+          setProgress(0);
+          setStage('Retrying with another provider…');
+        } else {
+          // If the provider name is known locally, show it; otherwise trust
+          // the stage string coming from the background worker.
+          if (
+            s.startsWith('Contacting AI provider…') &&
+            providerInfo?.provider
+          ) {
+            const model = providerInfo.model ? ` (${providerInfo.model})` : '';
+            setStage(`Contacting ${providerInfo.provider}${model}…`);
           } else {
-            // If the provider name is known locally, show it; otherwise trust
-            // the stage string coming from the background worker.
-            if (s.startsWith('Contacting AI provider…') && providerInfo?.provider) {
-              const model = providerInfo.model ? ` (${providerInfo.model})` : '';
-              setStage(`Contacting ${providerInfo.provider}${model}…`);
-            } else {
-              setStage(s);
-            }
+            setStage(s);
           }
-        };
-        const res = await runFactCheckPipeline(text, language, onFactCheck, onStage);
+        }
+      };
+      const res = await runFactCheckPipeline(
+        text,
+        language,
+        onFactCheck,
+        onStage,
+      );
       if ('error' in res && typeof res.error === 'string') {
         setError(res.error);
       } else if ('error' in res) {
         setError(String(res.error));
-      }
-      else {
+      } else {
         setResult(res);
         // Surface which provider actually answered (may be a fallback).
         setProvider((res as any).provider ?? null);
@@ -188,8 +217,17 @@ const FactCheck: React.FC<Props> = ({ text, enabled, onFactCheck }) => {
   };
 
   return (
-    <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center', ml: 0.75 }}>
-      <Tooltip title={enabled ? 'AI fact-check this answer' : 'Configure a provider in Options'}>
+    <Box
+      component="span"
+      sx={{ display: 'inline-flex', alignItems: 'center', ml: 0.75 }}
+    >
+      <Tooltip
+        title={
+          enabled
+            ? 'AI fact-check this answer'
+            : 'Configure a provider in Options'
+        }
+      >
         <span>
           <Button
             size="small"
@@ -209,7 +247,11 @@ const FactCheck: React.FC<Props> = ({ text, enabled, onFactCheck }) => {
         onClose={handleClose}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
         transformOrigin={{ vertical: 'top', horizontal: 'left' }}
-        slotProps={{ paper: { sx: { p: 2, maxWidth: 360, maxHeight: 420, overflowY: 'auto' } } }}
+        slotProps={{
+          paper: {
+            sx: { p: 2, maxWidth: 360, maxHeight: 420, overflowY: 'auto' },
+          },
+        }}
       >
         {loading && (
           <Box sx={{ width: '100%', minWidth: 240 }}>
@@ -240,15 +282,25 @@ const FactCheck: React.FC<Props> = ({ text, enabled, onFactCheck }) => {
                 color={VERDICT_COLOR[result.verdict]}
               />
               {provider && (
-                <Chip size="small" variant="outlined" label={`via ${provider}`} />
+                <Chip
+                  size="small"
+                  variant="outlined"
+                  label={`via ${provider}`}
+                />
               )}
             </Box>
             <Divider sx={{ mb: 1.5 }} />
 
-            <Section title="Formal Logic — Validity vs. Truth" body={result.validityVsTruth} />
+            <Section
+              title="Formal Logic — Validity vs. Truth"
+              body={result.validityVsTruth}
+            />
             <Section title="Ethos (Credibility)" body={result.rhetoric.ethos} />
             <Section title="Pathos (Emotion)" body={result.rhetoric.pathos} />
-            <Section title="Logos (Logic / Reason)" body={result.rhetoric.logos} />
+            <Section
+              title="Logos (Logic / Reason)"
+              body={result.rhetoric.logos}
+            />
 
             {result.fallacies.length > 0 && (
               <Box sx={{ mb: 1.5 }}>
@@ -264,7 +316,12 @@ const FactCheck: React.FC<Props> = ({ text, enabled, onFactCheck }) => {
                       <Typography
                         variant="body2"
                         component="blockquote"
-                        sx={{ borderLeft: '3px solid', borderColor: 'divider', pl: 1, my: 0.5 }}
+                        sx={{
+                          borderLeft: '3px solid',
+                          borderColor: 'divider',
+                          pl: 1,
+                          my: 0.5,
+                        }}
                       >
                         “{f.quote}”
                       </Typography>
@@ -283,7 +340,14 @@ const FactCheck: React.FC<Props> = ({ text, enabled, onFactCheck }) => {
                   Sources
                 </Typography>
                 {result.sources.map((s, i) => (
-                  <Typography key={i} variant="body2" component="a" href={s.url} target="_blank" rel="noreferrer">
+                  <Typography
+                    key={i}
+                    variant="body2"
+                    component="a"
+                    href={s.url}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
                     {s.title || s.url}
                   </Typography>
                 ))}

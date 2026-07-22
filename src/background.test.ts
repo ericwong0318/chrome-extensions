@@ -27,7 +27,11 @@ const mockAction = {
 beforeEach(() => {
   listeners.length = 0;
   connectListeners.length = 0;
-  (global as any).chrome = { runtime: mockRuntime, storage: mockChromeStorage, action: mockAction };
+  (global as any).chrome = {
+    runtime: mockRuntime,
+    storage: mockChromeStorage,
+    action: mockAction,
+  };
   // Clear module registry so background.ts re-registers its listener fresh.
   vi.resetModules();
 });
@@ -46,14 +50,20 @@ async function dispatch(request: any) {
 
 describe('background message handler', () => {
   it('blockUser adds a new user without duplicates', async () => {
-    const r1 = await dispatch({ action: 'blockUser', userId: 'u1', userName: 'Alice' });
+    const r1 = await dispatch({
+      action: 'blockUser',
+      userId: 'u1',
+      userName: 'Alice',
+    });
     expect(r1).toBe(true);
     expect(sendResponse).toHaveBeenCalledWith({ success: true });
 
     // Block same user again -> no duplicate
     sendResponse.mockClear();
     await dispatch({ action: 'blockUser', userId: 'u1', userName: 'Alice' });
-    const stored = (await mockChromeStorage.sync.get({ zhihuBlockedUsers: [] })) as any;
+    const stored = (await mockChromeStorage.sync.get({
+      zhihuBlockedUsers: [],
+    })) as any;
     expect(stored.zhihuBlockedUsers).toHaveLength(1);
   });
 
@@ -62,7 +72,9 @@ describe('background message handler', () => {
     sendResponse.mockClear();
     const r = await dispatch({ action: 'unblockUser', userId: 'u1' });
     expect(r).toBe(true);
-    const stored = (await mockChromeStorage.sync.get({ zhihuBlockedUsers: [] })) as any;
+    const stored = (await mockChromeStorage.sync.get({
+      zhihuBlockedUsers: [],
+    })) as any;
     expect(stored.zhihuBlockedUsers).toHaveLength(0);
   });
 
@@ -70,7 +82,9 @@ describe('background message handler', () => {
     await dispatch({ action: 'blockUser', userId: 'u1', userName: 'Alice' });
     sendResponse.mockClear();
     await dispatch({ action: 'getBlockedUsers' });
-    expect(sendResponse).toHaveBeenCalledWith({ users: [{ id: 'u1', name: 'Alice' }] });
+    expect(sendResponse).toHaveBeenCalledWith({
+      users: [{ id: 'u1', name: 'Alice' }],
+    });
   });
 
   it('returns undefined for unknown actions', async () => {
@@ -89,14 +103,26 @@ describe('background message handler', () => {
 
   it('cancels the in-flight fact-check when the content port disconnects', async () => {
     const captured: { signal?: AbortSignal } = {};
-    const callProvidersMock = vi.fn((text: string, configs: any, onStage: any, timeoutMs: number, signal?: AbortSignal) => {
-      captured.signal = signal;
-      return new Promise(() => {
-        // Keep the promise pending to simulate an in-flight request.
-      });
+    const callProvidersMock = vi.fn(
+      (
+        text: string,
+        configs: any,
+        onStage: any,
+        timeoutMs: number,
+        signal?: AbortSignal,
+      ) => {
+        captured.signal = signal;
+        return new Promise(() => {
+          // Keep the promise pending to simulate an in-flight request.
+        });
+      },
+    );
+    await mockChromeStorage.sync.set({
+      factCheckConfigs: [{ provider: 'openai', apiKey: 'oai' }],
     });
-    await mockChromeStorage.sync.set({ factCheckConfigs: [{ provider: 'openai', apiKey: 'oai' }] });
-    vi.doMock('./factcheck/providers', () => ({ callProviders: callProvidersMock }));
+    vi.doMock('./factcheck/providers', () => ({
+      callProviders: callProvidersMock,
+    }));
 
     await import('./background');
     expect(connectListeners).toHaveLength(1);
@@ -124,23 +150,29 @@ describe('background message handler', () => {
   });
 
   it('streams stage updates and the final result over the fact-check port', async () => {
-    const callProvidersMock = vi.fn((text: string, configs: any, onStage: any) => {
-      onStage('Contacting AI provider…', false);
-      onStage('Contacting AI provider…', true);
-      return Promise.resolve({
-        ok: true,
-        result: {
-          validityVsTruth: 'Stage streaming works.',
-          rhetoric: { ethos: 'Low', pathos: 'Low', logos: 'High' },
-          fallacies: [],
-          verdict: 'credible',
-        },
-        provider: 'openai',
-      });
-    });
+    const callProvidersMock = vi.fn(
+      (text: string, configs: any, onStage: any) => {
+        onStage('Contacting AI provider…', false);
+        onStage('Contacting AI provider…', true);
+        return Promise.resolve({
+          ok: true,
+          result: {
+            validityVsTruth: 'Stage streaming works.',
+            rhetoric: { ethos: 'Low', pathos: 'Low', logos: 'High' },
+            fallacies: [],
+            verdict: 'credible',
+          },
+          provider: 'openai',
+        });
+      },
+    );
 
-    await mockChromeStorage.sync.set({ factCheckConfigs: [{ provider: 'openai', apiKey: 'oai' }] });
-    vi.doMock('./factcheck/providers', () => ({ callProviders: callProvidersMock }));
+    await mockChromeStorage.sync.set({
+      factCheckConfigs: [{ provider: 'openai', apiKey: 'oai' }],
+    });
+    vi.doMock('./factcheck/providers', () => ({
+      callProviders: callProvidersMock,
+    }));
 
     await import('./background');
     expect(connectListeners).toHaveLength(1);
@@ -158,8 +190,14 @@ describe('background message handler', () => {
     await new Promise((r) => setTimeout(r, 0));
 
     expect(callProvidersMock).toHaveBeenCalledTimes(1);
-    expect(port.postMessage).toHaveBeenCalledWith({ stage: 'Contacting AI provider…', isRetry: false });
-    expect(port.postMessage).toHaveBeenCalledWith({ stage: 'Contacting AI provider…', isRetry: true });
+    expect(port.postMessage).toHaveBeenCalledWith({
+      stage: 'Contacting AI provider…',
+      isRetry: false,
+    });
+    expect(port.postMessage).toHaveBeenCalledWith({
+      stage: 'Contacting AI provider…',
+      isRetry: true,
+    });
     expect(port.postMessage).toHaveBeenCalledWith({
       result: expect.objectContaining({ verdict: 'credible' }),
       provider: 'openai',
@@ -171,11 +209,17 @@ describe('background message handler', () => {
     await dispatch({ action: 'getBlockedUsers' });
     const listener = listeners[listeners.length - 1];
     // Simulate a content script sending a blockUser message via chrome.runtime.onMessage.
-    listener({ action: 'blockUser', userId: 'u9', userName: 'Zoe' }, {}, vi.fn());
+    listener(
+      { action: 'blockUser', userId: 'u9', userName: 'Zoe' },
+      {},
+      vi.fn(),
+    );
     await new Promise((r) => setTimeout(r, 0));
 
     // The user should now be persisted in storage (the integration contract).
-    const stored = (await mockChromeStorage.sync.get({ zhihuBlockedUsers: [] })) as any;
+    const stored = (await mockChromeStorage.sync.get({
+      zhihuBlockedUsers: [],
+    })) as any;
     expect(stored.zhihuBlockedUsers).toEqual([{ id: 'u9', name: 'Zoe' }]);
   });
 });

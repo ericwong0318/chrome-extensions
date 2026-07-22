@@ -3,13 +3,16 @@ import { beforeEach } from 'vitest';
 
 // Mock chrome.storage for tests (both sync and local share the same store)
 const store: Record<string, any> = {};
-const changeListeners: Array<(changes: Record<string, any>, areaName: string) => void> = [];
+const changeListeners: Array<
+  (changes: Record<string, any>, areaName: string) => void
+> = [];
 
 const makeArea = () => ({
   get: (keys: any, cb?: (result: any) => void) => {
     const result: any = {};
     if (typeof keys === 'object' && keys !== null && !Array.isArray(keys)) {
-      for (const k of Object.keys(keys)) result[k] = k in store ? store[k] : keys[k];
+      for (const k of Object.keys(keys))
+        result[k] = k in store ? store[k] : keys[k];
     } else if (typeof keys === 'string') {
       result[keys] = store[keys];
     }
@@ -24,10 +27,10 @@ const makeArea = () => ({
 });
 
 const onChanged = {
-  addListener: (listener: typeof changeListeners[number]) => {
+  addListener: (listener: (typeof changeListeners)[number]) => {
     changeListeners.push(listener);
   },
-  removeListener: (listener: typeof changeListeners[number]) => {
+  removeListener: (listener: (typeof changeListeners)[number]) => {
     const index = changeListeners.indexOf(listener);
     if (index !== -1) changeListeners.splice(index, 1);
   },
