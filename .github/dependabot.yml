@@ -4,41 +4,42 @@ updates:
   - package-ecosystem: "npm"
     directory: "/"
     schedule:
-      interval: "weekly"
+      interval: "monthly"
       day: "monday"
       time: "04:00"
       timezone: "UTC"
-    open-pull-requests-limit: 3
+    open-pull-requests-limit: 1
     rebase-strategy: "auto"
     target-branch: "main"
     groups:
-      core-ui:
+      all-dependencies:
         patterns:
           - "react-19.*"
           - "@mui/*"
-      dev-tooling:
-        patterns:
+          - "@emotion/*"
+          - "typescript-5.*"
+          - "vite*"
+          - "@vitejs/plugin-react*"
+          - "@crxjs/vite-plugin*"
           - "eslint*"
           - "prettier*"
           - "@typescript-eslint/*"
-      testing-library:
-        patterns:
           - "@testing-library/*"
           - "jest*"
           - "vitest*"
-      linters-and-formatters:
-        patterns:
-          - "eslint*"
-          - "prettier*"
-          - "@typescript-eslint/*"
+          - "@testing-library/react*"
+          - "@testing-library/user-event*"
+          - "@playwright/test*"
+          - "jsdom*"
+          - "@types/*"
 
   # 2. GitHub Actions Workflows
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
-      interval: "weekly"
-    open-pull-requests-limit: 2
+      interval: "monthly"
+    open-pull-requests-limit: 1
     groups:
-      actions:
+      all-actions:
         patterns:
           - "*"
