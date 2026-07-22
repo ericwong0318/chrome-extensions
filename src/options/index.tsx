@@ -11,7 +11,7 @@ if (container) {
       '<pre style="color:red;white-space:pre-wrap;padding:8px;">' +
       String(err) +
       '</pre>';
-    // eslint-disable-next-line no-console
+     
     console.error(err);
   }
 }

@@ -168,7 +168,7 @@ export const callProvider = async (
 
   try {
     let url: string;
-    let headers: Record<string, string> = {
+    const headers: Record<string, string> = {
       'Content-Type': 'application/json',
     };
     let body: string;

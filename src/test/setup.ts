@@ -2,7 +2,7 @@ import '@testing-library/jest-dom';
 import { beforeEach } from 'vitest';
 
 // Mock chrome.storage for tests (both sync and local share the same store)
-const store: Record<string, any> = {};
+let store: Record<string, any> = {};
 const changeListeners: Array<
   (changes: Record<string, any>, areaName: string) => void
 > = [];
@@ -46,7 +46,7 @@ export const mockChromeStorage = {
 };
 
 beforeEach(() => {
-  for (const k of Object.keys(store)) delete store[k];
+  store = {};
   changeListeners.length = 0;
   (global as any).chrome = { storage: mockChromeStorage };
 });
