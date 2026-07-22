@@ -1,19 +1,31 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { Request } from './types/request';
 import { mockChromeStorage } from './test/setup';
 
 // Re-create the listener logic in isolation by importing the module side-effect.
 // We simulate chrome.runtime.onMessage by capturing the registered listener.
-const listeners: Array<(req: any, sender: any, sendResponse: any) => any> = [];
-const connectListeners: Array<(port: any) => void> = [];
+type MessageListener = (
+  req: unknown,
+  sender: unknown,
+  sendResponse: (response: unknown) => void,
+) => boolean | undefined;
+type ConnectListener = (port: chrome.runtime.Port) => void;
+
+const listeners: MessageListener[] = [];
+const connectListeners: ConnectListener[] = [];
+
+
+
 
 const mockRuntime = {
   onMessage: {
-    addListener: (fn: any) => listeners.push(fn),
+    addListener: (fn: MessageListener) => listeners.push(fn),
   },
   onConnect: {
-    addListener: (fn: any) => connectListeners.push(fn),
+    addListener: (fn: ConnectListener) => connectListeners.push(fn),
   },
   sendMessage: {
-    addListener: (fn: any) => fn,
+    addListener: (fn: (message: unknown) => void) => fn,
   },
   openOptionsPage: vi.fn(),
 };
@@ -38,7 +50,7 @@ beforeEach(() => {
 
 const sendResponse = vi.fn();
 
-async function dispatch(request: any) {
+async function dispatch(request: Request) {
   // Import after chrome is set so the listener registers against our mock.
   await import('./background');
   const listener = listeners[listeners.length - 1];
