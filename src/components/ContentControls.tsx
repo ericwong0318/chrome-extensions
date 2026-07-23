@@ -1,7 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Box } from '@mui/material';
-import { ControlsContainer } from './ControlsBase';
+import { Box, ThemeProvider, createTheme } from '@mui/material';
 import { useBlocker, BlockButton, INLINE_CLASS } from '../hooks/blockUser';
 import { FactCheckButton } from './FactCheckButton';
 import { logError } from '../utils';
@@ -152,7 +151,17 @@ export const ContentControls: React.FC = () => {
   }, [contents]);
 
   return (
-    <ControlsContainer>
+    <ThemeProvider theme={createTheme()}>
+      <Box
+        component="span"
+        sx={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: 0.5,
+          ml: 0.75,
+          verticalAlign: 'middle',
+        }}
+      >
       {/* Block buttons for users without answer content */}
       {users.map((user) => {
         const hasContent = contents.some((c) => c.element.contains(user.element));
@@ -192,6 +201,7 @@ export const ContentControls: React.FC = () => {
           container
         );
       })}
-    </ControlsContainer>
+    </Box>
+    </ThemeProvider>
   );
 };

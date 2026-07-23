@@ -8,9 +8,10 @@ import {
   Divider,
   LinearProgress,
   Tooltip,
+  ThemeProvider,
+  createTheme,
 } from '@mui/material';
 import FactCheckIcon from '@mui/icons-material/FactCheck';
-import { ControlsContainer } from './ControlsBase';
 import {
   FactCheckResult,
   FactCheckResultWithProvider,
@@ -219,7 +220,17 @@ const FactCheck: React.FC<Props> = ({ text, enabled, onFactCheck }) => {
   };
 
   return (
-    <ControlsContainer>
+    <ThemeProvider theme={createTheme()}>
+      <Box
+        component="span"
+        sx={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: 0.5,
+          ml: 0.75,
+          verticalAlign: 'middle',
+        }}
+      >
       <Tooltip title={enabled ? 'AI fact-check this answer' : 'Configure a provider in Options'}>
         <Box component="span">
           <Button
@@ -349,7 +360,8 @@ const FactCheck: React.FC<Props> = ({ text, enabled, onFactCheck }) => {
           </Box>
         )}
       </Popover>
-    </ControlsContainer>
+    </Box>
+    </ThemeProvider>
   );
 };
 
