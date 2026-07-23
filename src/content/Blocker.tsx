@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Box, Button, ThemeProvider, createTheme } from '@mui/material';
 import { logError } from '../logger';
-import FactCheck from '../factcheck/FactCheck';
+import FactCheck from './FactCheck';
 import { FactCheckResult } from '../factcheck/prompt';
 import { normalizeFactCheckConfigs } from '../factcheck/storage';
 

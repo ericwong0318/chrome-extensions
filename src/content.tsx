@@ -1,6 +1,6 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
-import Blocker from './blocker/Blocker';
+import Blocker from './content/Blocker';
 import { logError } from './logger';
 
 const overlayId = 'my-extension-root';

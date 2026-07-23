@@ -15,9 +15,9 @@ import {
   FactCheckResultWithProvider,
   Verdict,
   FactCheckLanguage,
-} from './prompt';
-import { runFactCheckPipeline, MAX_FACTCHECK_MS } from './pipeline';
-import { normalizeFactCheckConfigs } from './storage';
+} from '../factcheck/prompt';
+import { runFactCheckPipeline, MAX_FACTCHECK_MS } from '../factcheck/pipeline';
+import { normalizeFactCheckConfigs } from '../factcheck/storage';
 
 const VERDICT_COLOR: Record<Verdict, 'success' | 'warning' | 'default'> = {
   credible: 'success',
