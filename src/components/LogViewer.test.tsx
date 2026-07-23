@@ -7,7 +7,7 @@ import {
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import LogViewer from './LogViewer';
 import { mockChromeStorage } from '../test/setup';
-import { logError, clearLogs } from './index';
+import { logError, clearLogs } from '../utils/index';
 
 beforeEach(async () => {
   (global as Record<string, unknown>).chrome = { storage: mockChromeStorage };

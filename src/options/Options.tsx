@@ -20,15 +20,15 @@ import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
-import { logError } from '../logger';
-import LogViewer from '../logger/LogViewer';
-import { FactCheckLanguage, LANGUAGE_LABELS } from '../factcheck/prompt';
+import { logError } from '../utils';
+import LogViewer from '../components/LogViewer';
+import { FactCheckLanguage, LANGUAGE_LABELS } from '../hooks/factcheck/prompt';
 import {
   FactCheckConfig,
   ProviderId,
   callProvider,
-} from '../factcheck/providers';
-import { normalizeFactCheckConfigs } from '../factcheck/storage';
+} from '../hooks/factcheck/providers';
+import { normalizeFactCheckConfigs } from '../hooks/factcheck/storage';
 
 type BlockedUser = { id: string; name: string };
 

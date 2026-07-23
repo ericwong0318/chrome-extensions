@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Request } from './types/request';
 import { mockChromeStorage } from './test/setup';
-import type { FactCheckConfig } from './factcheck/providers';
+import type { FactCheckConfig } from './hooks/factcheck/providers';
 
 // Re-create the listener logic in isolation by importing the module side-effect.
 // We simulate chrome.runtime.onMessage by capturing the registered listener.
@@ -133,7 +133,7 @@ describe('background message handler', () => {
     await mockChromeStorage.sync.set({
       factCheckConfigs: [{ provider: 'openai', apiKey: 'oai' }],
     });
-    vi.doMock('./factcheck/providers', () => ({
+    vi.doMock('./hooks/factcheck/providers', () => ({
       callProviders: callProvidersMock,
     }));
 
@@ -192,7 +192,7 @@ describe('background message handler', () => {
     await mockChromeStorage.sync.set({
       factCheckConfigs: [{ provider: 'openai', apiKey: 'oai' }],
     });
-    vi.doMock('./factcheck/providers', () => ({
+    vi.doMock('./hooks/factcheck/providers', () => ({
       callProviders: callProvidersMock,
     }));
 

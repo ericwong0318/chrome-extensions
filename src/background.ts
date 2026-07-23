@@ -1,6 +1,6 @@
-import { logError } from './logger';
-import { callProviders } from './factcheck/providers';
-import { normalizeFactCheckConfigs } from './factcheck/storage';
+import { logError } from './utils';
+import { callProviders } from './hooks/factcheck/providers';
+import { normalizeFactCheckConfigs } from './hooks/factcheck/storage';
 import type { Request } from './types/request'
 export { };
 

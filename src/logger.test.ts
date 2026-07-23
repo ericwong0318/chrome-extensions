@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { logError, logWarn, logInfo, getLogs, clearLogs } from './logger';
+import { logError, logWarn, logInfo, getLogs, clearLogs } from './utils';
 import { mockChromeStorage } from './test/setup';
 
 beforeEach(async () => {

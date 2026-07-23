@@ -9,7 +9,7 @@ import {
   Divider,
   Chip,
 } from '@mui/material';
-import { getLogs, clearLogs, LogEntry } from './index';
+import { getLogs, clearLogs, LogEntry } from '../utils/index';
 
 const LogViewer: React.FC = () => {
   const [logs, setLogs] = useState<LogEntry[]>([]);

@@ -10,14 +10,15 @@ import {
   Tooltip,
 } from '@mui/material';
 import FactCheckIcon from '@mui/icons-material/FactCheck';
+import { ControlsContainer } from './ControlsBase';
 import {
   FactCheckResult,
   FactCheckResultWithProvider,
   Verdict,
   FactCheckLanguage,
-} from '../factcheck/prompt';
-import { runFactCheckPipeline, MAX_FACTCHECK_MS } from '../factcheck/pipeline';
-import { normalizeFactCheckConfigs } from '../factcheck/storage';
+} from '../hooks/factcheck/prompt';
+import { runFactCheckPipeline, MAX_FACTCHECK_MS } from '../hooks/factcheck/pipeline';
+import { normalizeFactCheckConfigs } from '../hooks/factcheck/storage';
 
 const VERDICT_COLOR: Record<Verdict, 'success' | 'warning' | 'default'> = {
   credible: 'success',
@@ -218,18 +219,9 @@ const FactCheck: React.FC<Props> = ({ text, enabled, onFactCheck }) => {
   };
 
   return (
-    <Box
-      component="span"
-      sx={{ display: 'inline-flex', alignItems: 'center', ml: 0.75 }}
-    >
-      <Tooltip
-        title={
-          enabled
-            ? 'AI fact-check this answer'
-            : 'Configure a provider in Options'
-        }
-      >
-        <span>
+    <ControlsContainer>
+      <Tooltip title={enabled ? 'AI fact-check this answer' : 'Configure a provider in Options'}>
+        <Box component="span">
           <Button
             size="small"
             variant="outlined"
@@ -239,7 +231,7 @@ const FactCheck: React.FC<Props> = ({ text, enabled, onFactCheck }) => {
           >
             Fact Check
           </Button>
-        </span>
+        </Box>
       </Tooltip>
 
       <Popover
@@ -357,7 +349,7 @@ const FactCheck: React.FC<Props> = ({ text, enabled, onFactCheck }) => {
           </Box>
         )}
       </Popover>
-    </Box>
+    </ControlsContainer>
   );
 };
 

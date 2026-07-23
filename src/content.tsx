@@ -1,7 +1,7 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
-import Blocker from './content/Blocker';
-import { logError } from './logger';
+import { ContentControls } from './components/ContentControls';
+import { logError } from './utils';
 
 const overlayId = 'my-extension-root';
 
@@ -44,7 +44,7 @@ if (!document.getElementById(overlayId)) {
 
   createRoot(reactRootAnchor).render(
     <React.StrictMode>
-      <Blocker />
+      <ContentControls />
     </React.StrictMode>,
   );
 }
