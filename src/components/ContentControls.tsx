@@ -1,7 +1,8 @@
 import React from 'react';
 import { createPortal } from 'react-dom';
 import { Box, ThemeProvider, createTheme } from '@mui/material';
-import { useBlocker, BlockButton, INLINE_CLASS } from '../hooks/blockUser';
+import { useBlockUser } from '../blocker';
+import { BlockButton } from './BlockUserButton';
 import { FactCheckButton } from './FactCheckButton';
 import { useZhihuContent } from '../hooks/useZhihuContent';
 import { useFactCheckRunner } from '../hooks/useFactCheckRunner';
@@ -13,7 +14,7 @@ import { useFactCheckConfig } from '../hooks/useFactCheckConfig';
  * Delegates logic to hooks; this file only renders UI.
  */
 export const ContentControls: React.FC = () => {
-  const { blocked, users, blockContainers, blockUser, unblockUser } = useBlocker();
+  const { blocked, users, blockContainers, blockUser, unblockUser } = useBlockUser();
   const { contents } = useZhihuContent();
   const { factCheckEnabled, language, timeoutSec } = useFactCheckConfig();
   const runFactCheck = useFactCheckRunner(language, timeoutSec);

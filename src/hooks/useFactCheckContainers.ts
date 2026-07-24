@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { ZhihuContent, CONTENT_SELECTORS } from './useZhihuContent';
-import { INLINE_CLASS } from './blockUser';
+import { ZhihuContent } from './useZhihuContent';
+import { INLINE_CLASS } from '../blocker';
 
 const FACTCHECK_CLASS = 'zhihu-factcheck-inline';
 
