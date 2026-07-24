@@ -14,7 +14,7 @@ import {
   FactCheckResult,
   FactCheckLanguage,
 } from './prompt';
-import { logError, logWarn } from '../../utils/logger';
+import { logError, logWarn } from '../../features/logging';
 
 export type ProviderId =
   | 'claude'

@@ -6,11 +6,13 @@ import {
 } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import LogViewer from './LogViewer';
-import { mockChromeStorage } from '../test/setup';
-import { logError, clearLogs } from '../utils/index';
+import { mockChromeStorage } from '../../test/setup';
+import { logError, clearLogs } from './logger';
 
 beforeEach(async () => {
-  (global as Record<string, unknown>).chrome = { storage: mockChromeStorage };
+  (global as unknown as Record<string, unknown>).chrome = {
+    storage: mockChromeStorage,
+  };
   await clearLogs();
 });
 

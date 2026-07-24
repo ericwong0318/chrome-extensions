@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { logError } from '../utils';
+import { logError } from '../features/logging';
 
 export type ZhihuContent = { id: string; text: string; element: HTMLElement };
 

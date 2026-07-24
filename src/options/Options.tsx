@@ -20,8 +20,8 @@ import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
-import { logError } from '../utils';
-import LogViewer from '../components/LogViewer';
+import { logError } from '../features/logging';
+import LogViewer from '../features/logging';
 import { FactCheckLanguage, LANGUAGE_LABELS } from '../features/factcheck/prompt';
 import {
   FactCheckConfig,

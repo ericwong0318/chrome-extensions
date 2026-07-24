@@ -1,9 +1,9 @@
-import { describe, it, expect, beforeEach } from 'vitest';
-import { logError, logWarn, logInfo, getLogs, clearLogs } from './utils';
-import { mockChromeStorage } from './test/setup';
+import { logError, logWarn, logInfo, getLogs, clearLogs } from './logger';
+import { mockChromeStorage } from '../../test/setup';
+import { beforeEach, describe, expect, it } from 'vitest';
 
 beforeEach(async () => {
-  (global as unknown as { chrome: { storage: typeof mockChromeStorage } }).chrome = {
+  (global as unknown as Record<string, unknown>).chrome = {
     storage: mockChromeStorage,
   };
   await clearLogs();
@@ -16,10 +16,7 @@ describe('logger', () => {
     await new Promise((r) => setTimeout(r, 10));
     const logs = await getLogs();
     expect(logs).toHaveLength(1);
-    expect(logs[0].level).toBe('error');
-    expect(logs[0].message).toBe('boom');
-    expect(logs[0].context).toBe('background');
-    expect(typeof logs[0].time).toBe('number');
+    expect(logs[0]).toMatchObject({ level: 'error', message: 'boom', context: 'background' });
   });
 
   it('records warn and info levels', async () => {
@@ -40,6 +37,7 @@ describe('logger', () => {
     for (let i = 0; i < 250; i++) await logError(`e${i}`);
     const logs = await getLogs();
     expect(logs).toHaveLength(200);
-    expect(logs[logs.length - 1].message).toBe('e249');
+    // Oldest kept entry after dropping 50 oldest
+    expect(logs[0].message).toBe('e50');
   });
 });

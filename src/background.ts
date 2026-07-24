@@ -1,4 +1,4 @@
-import { logError } from './utils';
+import { logError } from './features/logging';
 import { callProviders, normalizeFactCheckConfigs } from './features/factcheck';
 import type { Request } from './types/request';
 export { };

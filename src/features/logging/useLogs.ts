@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { getLogs, clearLogs, LogEntry } from '../utils';
+import { getLogs, clearLogs, LogEntry } from './logger';
 
 export const useLogs = () => {
   const [logs, setLogs] = useState<LogEntry[]>([]);
