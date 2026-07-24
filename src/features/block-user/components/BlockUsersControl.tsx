@@ -6,7 +6,7 @@ import { BlockButton } from './BlockUserButton';
 /**
  * Main block-user component that manages the blocking UI for all users on the page
  */
-export const BlockUser: React.FC = () => {
+export const BlockUsersControl: React.FC = () => {
   const { blocked, users, blockUser, unblockUser } = useBlockUser();
 
   return (
