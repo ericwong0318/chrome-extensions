@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.5.0](https://github.com/ericwong0318/chrome-extensions/compare/v1.4.1...v1.5.0) (2026-07-24)
+
+
+### Features
+
+* add unit tests for ContentControls component ([cb164f4](https://github.com/ericwong0318/chrome-extensions/commit/cb164f425b439b8d1b8042778801b6b7382b5e44))
+
+
+### Bug Fixes
+
+* resolve TypeScript type assertion error in useBlockUser.ts storage listener ([9d53170](https://github.com/ericwong0318/chrome-extensions/commit/9d53170f811cfcf56d5062a55f66329a358b5108))
+
 ## [1.4.1](https://github.com/ericwong0318/chrome-extensions/compare/v1.4.0...v1.4.1) (2026-07-22)
 
 
