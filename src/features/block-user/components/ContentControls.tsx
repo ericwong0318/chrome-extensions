@@ -4,11 +4,11 @@ import { Box, ThemeProvider, createTheme } from '@mui/material';
 import { useBlockUser } from '../hooks/useBlockUser';
 import { BlockButton } from './BlockUserButton';
 import { BlockUser } from './BlockUser';
-import { FactCheckButton } from '../../factcheck/components/FactCheckButton';
+import { FactCheckButton } from '../../fact-check/components/FactCheckButton';
 import { useZhihuContent } from '../../../hooks/useZhihuContent';
-import { useFactCheckRunner } from '../../factcheck/hooks/useFactCheckRunner';
-import { useFactCheckContainers } from '../../factcheck/hooks/useFactCheckContainers';
-import { useFactCheckConfig } from '../../factcheck/hooks/useFactCheckConfig';
+import { useFactCheckRunner } from '../../fact-check/hooks/useFactCheckRunner';
+import { useFactCheckContainers } from '../../fact-check/hooks/useFactCheckContainers';
+import { useFactCheckConfig } from '../../fact-check/hooks/useFactCheckConfig';
 import type { ZhihuContent } from '../../../hooks/useZhihuContent';
 
 /**

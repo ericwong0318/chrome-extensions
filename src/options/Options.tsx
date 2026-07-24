@@ -22,13 +22,13 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
 import { logError } from '../features/logging';
 import LogViewer from '../features/logging';
-import { FactCheckLanguage, LANGUAGE_LABELS } from '../features/factcheck/prompt';
+import { FactCheckLanguage, LANGUAGE_LABELS } from '../features/fact-check/prompt';
 import {
   FactCheckConfig,
   ProviderId,
   callProvider,
-} from '../features/factcheck/providers';
-import { normalizeFactCheckConfigs } from '../features/factcheck/storage';
+} from '../features/fact-check/providers';
+import { normalizeFactCheckConfigs } from '../features/fact-check/storage';
 
 type BlockedUser = { id: string; name: string };
 

@@ -1,5 +1,5 @@
 import { logError } from './features/logging';
-import { callProviders, normalizeFactCheckConfigs } from './features/factcheck';
+import { callProviders, normalizeFactCheckConfigs } from './features/fact-check';
 import type { Request } from './types/request';
 export { };
 
