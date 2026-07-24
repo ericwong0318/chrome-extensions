@@ -35,3 +35,13 @@ export {
   type FactCheckResultWithProvider,
   LANGUAGE_LABELS,
 } from './prompt';
+
+// Components
+export { default as FactCheck } from './components/FactCheck';
+export { FactCheckButton, type FactCheckButtonProps } from './components/FactCheckButton';
+
+// Hooks
+export { useFactCheckAction, type FactCheckResult as FactCheckActionResult } from './hooks/useFactCheckAction';
+export { useFactCheckConfig } from './hooks/useFactCheckConfig';
+export { useFactCheckContainers } from './hooks/useFactCheckContainers';
+export { useFactCheckRunner, runFactCheck } from './hooks/useFactCheckRunner';

@@ -1,13 +1,9 @@
 import React from 'react';
 import { createPortal } from 'react-dom';
 import { Box, ThemeProvider, createTheme } from '@mui/material';
-import { useBlockUser } from '../features/block-user/hooks/useBlockUser';
-import { BlockButton } from '../features/block-user/components/BlockUserButton';
-import { FactCheckButton } from '../features/fact-check/components/FactCheckButton';
+import { useBlockUser, BlockButton } from '../features/block-user';
+import { FactCheckButton, useFactCheckRunner, useFactCheckContainers, useFactCheckConfig } from '../features/fact-check';
 import { useZhihuContent } from '../hooks/useZhihuContent';
-import { useFactCheckRunner } from '../features/fact-check/hooks/useFactCheckRunner';
-import { useFactCheckContainers } from '../features/fact-check/hooks/useFactCheckContainers';
-import { useFactCheckConfig } from '../features/fact-check/hooks/useFactCheckConfig';
 
 /**
  * Main wrapper that composes both Block User and Fact Check controls.
