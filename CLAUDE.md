@@ -51,6 +51,25 @@ Both commands must pass before considering the task complete.
 
 - Verified by GitHub Actions on every PR
 
+### Commit Message Conventions
+
+All commit messages **must** follow the [release-please](https://github.com/googleapis/release-please) conventional commits format to enable automated versioning and changelog generation:
+
+- `feat:` - New features (triggers minor version bump)
+- `fix:` - Bug fixes (triggers patch version bump)
+- `docs:` - Documentation changes
+- `style:` - Code style changes (formatting, missing semicolons, etc.)
+- `refactor:` - Code refactoring without changing functionality
+- `perf:` - Performance improvements
+- `test:` - Adding or updating tests
+- `build:` - Changes to build system or dependencies
+- `ci:` - Changes to CI configuration
+- `chore:` - Other maintenance tasks
+
+Example: `feat: add support for blocking multiple users at once`
+
+Breaking changes should be indicated with `BREAKING CHANGE:` in the commit body or `!` after the type: `feat(api)!: change endpoint response format`.
+
 ### Code Coverage
 
 - **Runner**: Vitest with `@vitest/coverage-v8` for V8 profiler performance
