@@ -11,7 +11,7 @@ export const runFactCheck = (text: string, question: string | undefined, languag
       if (typeof msg === 'object' && msg && 'stage' in msg) { return; }
       if (typeof msg === 'object' && msg && 'disabled' in msg) { finish({ error: 'No provider configured.' }); return; }
       if (typeof msg === 'object' && msg && 'error' in msg) { finish({ error: (msg as { error: string }).error }); return; }
-      if (typeof msg === 'object' && msg && 'result' in msg) { finish((msg as { result: unknown }).result); return; }
+      if (typeof msg === 'object' && msg && 'result' in msg) { finish(msg); return; }
       finish(msg);
     });
     port.onDisconnect.addListener(() => {

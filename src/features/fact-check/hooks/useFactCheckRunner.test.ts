@@ -67,7 +67,7 @@ describe('useFactCheckRunner', () => {
       });
 
       const result = await promise;
-      expect(result).toEqual({ verdict: 'credible', sources: [] });
+      expect(result).toEqual({ result: { verdict: 'credible', sources: [] } });
     });
 
     it('should handle error response from background', async () => {
@@ -163,7 +163,7 @@ describe('useFactCheckRunner', () => {
       });
 
       const result = await promise;
-      expect(result).toEqual({ verdict: 'unverified' });
+      expect(result).toEqual({ result: { verdict: 'unverified' } });
     });
 
     it('should handle port disconnect with error', async () => {
@@ -346,7 +346,7 @@ describe('useFactCheckRunner', () => {
       });
 
       const resultValue = await promise;
-      expect(resultValue).toEqual({ verdict: 'credible' });
+      expect(resultValue).toEqual({ result: { verdict: 'credible' } });
     });
   });
 });
