@@ -1,6 +1,6 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
-import { ContentControls } from './features/blocker/components/ContentControls';
+import { ContentControls } from './features/block-user/components/ContentControls';
 import { logError } from './utils';
 
 const overlayId = 'my-extension-root';

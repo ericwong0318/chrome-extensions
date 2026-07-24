@@ -4,9 +4,9 @@ import { useBlockUser, INLINE_CLASS } from '../hooks/useBlockUser';
 import { BlockButton } from './BlockUserButton';
 
 /**
- * Main blocker component that manages the blocking UI for all users on the page
+ * Main block-user component that manages the blocking UI for all users on the page
  */
-export const Blocker: React.FC = () => {
+export const BlockUser: React.FC = () => {
   const { blocked, users, blockUser, unblockUser } = useBlockUser();
 
   return (

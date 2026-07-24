@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { Box, ThemeProvider, createTheme } from '@mui/material';
 import { useBlockUser } from '../hooks/useBlockUser';
 import { BlockButton } from './BlockUserButton';
+import { BlockUser } from './BlockUser';
 import { FactCheckButton } from '../../factcheck/components/FactCheckButton';
 import { useZhihuContent } from '../../../hooks/useZhihuContent';
 import { useFactCheckRunner } from '../../factcheck/hooks/useFactCheckRunner';
