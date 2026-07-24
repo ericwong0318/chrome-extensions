@@ -60,7 +60,7 @@ export const useBlockUser = () => {
     load();
     const listener = (changes: Record<string, { oldValue?: unknown; newValue?: unknown }>, area: string) => {
       if (area !== 'sync') return;
-      if (changes.zhihuBlockedUsers) setBlocked(changes.zhihuBlockedUsers.newValue);
+      if (changes.zhihuBlockedUsers) setBlocked(changes.zhihuBlockedUsers.newValue as BlockedUser[]);
     };
     if (chrome.storage.onChanged) {
       chrome.storage.onChanged.addListener(listener);
