@@ -8,16 +8,17 @@ const FACTCHECK_CLASS = 'zhihu-factcheck-inline';
 export type FactCheckButtonProps = {
   enabled: boolean;
   text: string;
-  onFactCheck: (text: string, onStage?: (stage: string, isRetry?: boolean) => void) => Promise<unknown>;
+  question?: string;
+  onFactCheck: (text: string, question?: string, onStage?: (stage: string, isRetry?: boolean) => void) => Promise<unknown>;
 };
 
-export const FactCheckButton: React.FC<FactCheckButtonProps> = ({ enabled, text, onFactCheck }) => {
+export const FactCheckButton: React.FC<FactCheckButtonProps> = ({ enabled, text, question, onFactCheck }) => {
   const [anchor, setAnchor] = useState<HTMLElement | null>(null);
   const { loading, result, provider, error, progress, stage, handleClick } = useFactCheckAction();
 
   const onClick = async (e: React.MouseEvent<HTMLElement>) => {
     setAnchor(e.currentTarget);
-    await handleClick(e, enabled, text, onFactCheck);
+    await handleClick(e, enabled, text, question, onFactCheck);
   };
 
   const open = Boolean(anchor);

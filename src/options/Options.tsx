@@ -209,6 +209,7 @@ const Options: React.FC = () => {
     try {
       const res = await callProvider(
         'Connection test.',
+        undefined,
         cfg as FactCheckConfig,
         9000,
       );

@@ -6,6 +6,7 @@ export { };
 /** Message sent over the 'factCheck' port from the content script. */
 interface FactCheckPortMessage {
   text: string;
+  question?: string;
 }
 
 /** Type guard that validates an unknown port message at runtime. */
@@ -89,7 +90,7 @@ chrome.runtime.onMessage.addListener((request: Request, sender, sendResponse) =>
           );
           const timeoutMs = timeoutSec * 1000;
 
-          callProviders(request.text ?? '', configs, undefined, timeoutMs).then(
+          callProviders(request.text ?? '', request.question, configs, undefined, timeoutMs).then(
             (res) => {
               if (res.ok)
                 sendResponse({ result: res.result, provider: res.provider });
@@ -158,6 +159,7 @@ if (chrome.runtime.onConnect) {
           };
           callProviders(
             msg.text,
+            msg.question,
             configs,
             onStage,
             timeoutMs,

@@ -119,6 +119,7 @@ describe('background message handler', () => {
     const callProvidersMock = vi.fn(
       (
         text: string,
+        question: string | undefined,
         configs: FactCheckConfig[],
         onStage: (stage: string, isRetry: boolean) => void,
         timeoutMs: number,
@@ -155,7 +156,7 @@ describe('background message handler', () => {
 
     expect(onMessageAddListener).toHaveBeenCalledTimes(1);
     const messageListener = onMessageAddListener.mock.calls[0][0];
-    messageListener({ text: 'hello' });
+    messageListener({ text: 'hello', question: 'What is the question?' });
     await new Promise((r) => setTimeout(r, 0));
 
     expect(callProvidersMock).toHaveBeenCalledTimes(1);
@@ -171,6 +172,7 @@ describe('background message handler', () => {
     const callProvidersMock = vi.fn(
       (
         text: string,
+        question: string | undefined,
         configs: FactCheckConfig[],
         onStage: (stage: string, isRetry: boolean) => void,
       ) => {
@@ -213,7 +215,7 @@ describe('background message handler', () => {
     connectListeners[0](port);
 
     const messageListener = onMessageAddListener.mock.calls[0][0];
-    messageListener({ text: 'hello' });
+    messageListener({ text: 'hello', question: 'What is the question?' });
     await new Promise((r) => setTimeout(r, 0));
 
     expect(callProvidersMock).toHaveBeenCalledTimes(1);

@@ -35,14 +35,14 @@ const okGemini = (content: string) => ({
 
 describe('callProvider', () => {
   it('returns an error when no provider is configured', async () => {
-    const res = await callProvider('some text', { provider: '' as ProviderId });
+    const res = await callProvider('some text', undefined, { provider: '' as ProviderId });
 
     expect(res.ok).toBe(false);
     if (!res.ok) expect(res.attempts).toHaveLength(0);
   });
 
   it('returns an error when a cloud provider has no API key', async () => {
-    const res = await callProvider('text', { provider: 'claude' });
+    const res = await callProvider('text', undefined, { provider: 'claude' });
     expect(res.ok).toBe(false);
     if (!res.ok) {
       expect(res.error).toMatch(/API key/i);
@@ -52,7 +52,7 @@ describe('callProvider', () => {
 
   it('posts to the Claude endpoint with the shared system prompt', async () => {
     fetchMock.mockResolvedValue(okClaude('{"verdict":"unverified"}'));
-    const res = await callProvider('claim', {
+    const res = await callProvider('claim', undefined, {
       provider: 'claude',
       apiKey: 'k',
       model: 'm',
@@ -70,7 +70,7 @@ describe('callProvider', () => {
 
   it('posts to the Gemini endpoint with the key in the query string', async () => {
     fetchMock.mockResolvedValue(okGemini('{}'));
-    await callProvider('claim', {
+    await callProvider('claim', undefined, {
       provider: 'gemini',
       apiKey: 'gk',
       model: 'gm',
@@ -85,7 +85,7 @@ describe('callProvider', () => {
 
   it('posts to a local OpenAI-compatible server without an API key', async () => {
     fetchMock.mockResolvedValue(okOpenAi('{"verdict":"credible"}'));
-    const res = await callProvider('claim', {
+    const res = await callProvider('claim', undefined, {
       provider: 'local',
       model: 'llama3.1',
     });
@@ -97,7 +97,7 @@ describe('callProvider', () => {
 
   it('posts to the Other (OpenAI-compatible) endpoint with a bearer token', async () => {
     fetchMock.mockResolvedValue(okOpenAi('{"verdict":"misleading"}'));
-    await callProvider('claim', {
+    await callProvider('claim', undefined, {
       provider: 'other',
       apiKey: 'ok',
       model: 'gpt-4o-mini',
@@ -110,7 +110,7 @@ describe('callProvider', () => {
 
   it('posts to the Other (OpenAI-compatible) endpoint without Authorization when base URL is localhost', async () => {
     fetchMock.mockResolvedValue(okOpenAi('{"verdict":"credible"}'));
-    await callProvider('claim', {
+    await callProvider('claim', undefined, {
       provider: 'other',
       apiKey: 'dummy-key',
       model: 'llama3.1',
@@ -123,7 +123,7 @@ describe('callProvider', () => {
 
   it('posts to the Other (OpenAI-compatible) endpoint without Authorization when base URL is 127.0.0.1', async () => {
     fetchMock.mockResolvedValue(okOpenAi('{"verdict":"credible"}'));
-    await callProvider('claim', {
+    await callProvider('claim', undefined, {
       provider: 'other',
       apiKey: 'dummy-key',
       model: 'llama3.1',
@@ -136,7 +136,7 @@ describe('callProvider', () => {
 
   it('posts to the Other (OpenAI-compatible) endpoint without Authorization when base URL is private IP', async () => {
     fetchMock.mockResolvedValue(okOpenAi('{"verdict":"credible"}'));
-    await callProvider('claim', {
+    await callProvider('claim', undefined, {
       provider: 'other',
       apiKey: 'dummy-key',
       model: 'llama3.1',
@@ -149,7 +149,7 @@ describe('callProvider', () => {
 
   it('posts to OpenRouter with a bearer token and default base URL', async () => {
     fetchMock.mockResolvedValue(okOpenAi('{"verdict":"credible"}'));
-    const res = await callProvider('claim', {
+    const res = await callProvider('claim', undefined, {
       provider: 'openrouter',
       apiKey: 'ork',
     });
@@ -160,14 +160,14 @@ describe('callProvider', () => {
   });
 
   it('returns an error when OpenRouter has no API key', async () => {
-    const res = await callProvider('claim', { provider: 'openrouter' });
+    const res = await callProvider('claim', undefined, { provider: 'openrouter' });
     expect(res.ok).toBe(false);
     if (!res.ok) expect(res.error).toMatch(/OpenRouter/i);
   });
 
   it('posts to OpenAI with a bearer token', async () => {
     fetchMock.mockResolvedValue(okOpenAi('{"verdict":"credible"}'));
-    const res = await callProvider('claim', {
+    const res = await callProvider('claim', undefined, {
       provider: 'openai',
       apiKey: 'oai',
     });
@@ -179,7 +179,7 @@ describe('callProvider', () => {
 
   it('posts to DeepSeek with a bearer token', async () => {
     fetchMock.mockResolvedValue(okOpenAi('{"verdict":"unverified"}'));
-    const res = await callProvider('claim', {
+    const res = await callProvider('claim', undefined, {
       provider: 'deepseek',
       apiKey: 'ds',
     });
@@ -190,13 +190,13 @@ describe('callProvider', () => {
   });
 
   it('returns an error when DeepSeek has no API key', async () => {
-    const res = await callProvider('claim', { provider: 'deepseek' });
+    const res = await callProvider('claim', undefined, { provider: 'deepseek' });
     expect(res.ok).toBe(false);
     if (!res.ok) expect(res.error).toMatch(/DeepSeek/i);
   });
 
   it('returns an error when OpenAI has no API key', async () => {
-    const res = await callProvider('claim', { provider: 'openai' });
+    const res = await callProvider('claim', undefined, { provider: 'openai' });
     expect(res.ok).toBe(false);
     if (!res.ok) expect(res.error).toMatch(/OpenAI/i);
   });
@@ -207,7 +207,7 @@ describe('callProvider', () => {
       status: 401,
       text: async () => 'unauthorized',
     });
-    const res = await callProvider('claim', {
+    const res = await callProvider('claim', undefined, {
       provider: 'claude',
       apiKey: 'bad',
     });
@@ -228,7 +228,7 @@ describe('callProvider', () => {
       status: 429,
       text: async () => body,
     });
-    const res = await callProvider('claim', {
+    const res = await callProvider('claim', undefined, {
       provider: 'openrouter',
       apiKey: 'ork',
     });
@@ -247,7 +247,7 @@ describe('callProvider', () => {
       status: 500,
       text: async () => '<html>oops</html>',
     });
-    const res = await callProvider('claim', {
+    const res = await callProvider('claim', undefined, {
       provider: 'openai',
       apiKey: 'oai',
     });
@@ -257,7 +257,7 @@ describe('callProvider', () => {
 
   it('includes a Simplified Chinese instruction in the prompt when language is zh-CN', async () => {
     fetchMock.mockResolvedValue(okOpenAi('{"verdict":"credible"}'));
-    await callProvider('claim', {
+    await callProvider('claim', undefined, {
       provider: 'openai',
       apiKey: 'oai',
       language: 'zh-CN',
@@ -273,7 +273,7 @@ describe('callProvider', () => {
 
   it('includes an English instruction in the prompt when language is en', async () => {
     fetchMock.mockResolvedValue(okOpenAi('{"verdict":"credible"}'));
-    await callProvider('claim', {
+    await callProvider('claim', undefined, {
       provider: 'openai',
       apiKey: 'oai',
       language: 'en',
@@ -291,7 +291,7 @@ describe('callProvider', () => {
 describe('callProviders (fallback)', () => {
   it('uses the first provider when it succeeds', async () => {
     fetchMock.mockResolvedValue(okOpenAi('{"verdict":"credible"}'));
-    const res = await callProviders('claim', [
+    const res = await callProviders('claim', undefined, [
       { provider: 'openai', apiKey: 'oai' },
       { provider: 'claude', apiKey: 'ck' },
     ]);
@@ -310,7 +310,7 @@ describe('callProviders (fallback)', () => {
         text: async () => 'unauthorized',
       })
       .mockResolvedValueOnce(okClaude('{"verdict":"credible"}'));
-    const res = await callProviders('claim', [
+    const res = await callProviders('claim', undefined, [
       { provider: 'openai', apiKey: 'bad' },
       { provider: 'claude', apiKey: 'ck' },
     ]);
@@ -332,7 +332,7 @@ describe('callProviders (fallback)', () => {
         text: async () => 'boom',
       })
       .mockResolvedValueOnce(okOpenAi('{"verdict":"unverified"}'));
-    const res = await callProviders('claim', [
+    const res = await callProviders('claim', undefined, [
       { provider: 'openai', apiKey: 'oai' },
       { provider: 'deepseek', apiKey: 'ds' },
       { provider: 'local', model: 'llama3.1' },
@@ -354,7 +354,7 @@ describe('callProviders (fallback)', () => {
         status: 500,
         text: async () => 'down',
       });
-    const res = await callProviders('claim', [
+    const res = await callProviders('claim', undefined, [
       { provider: 'openai', apiKey: 'bad' },
       { provider: 'claude', apiKey: 'bad' },
     ]);
@@ -369,7 +369,7 @@ describe('callProviders (fallback)', () => {
 
   it('skips providers with no provider selected and uses a valid one', async () => {
     fetchMock.mockResolvedValue(okOpenAi('{"verdict":"credible"}'));
-    const res = await callProviders('claim', [
+    const res = await callProviders('claim', undefined, [
       { provider: '' as ProviderId },
       { provider: 'openai', apiKey: 'oai' },
     ]);
@@ -380,7 +380,7 @@ describe('callProviders (fallback)', () => {
 
   it('returns a disabled-style error when no providers are configured', async () => {
 
-    const res = await callProviders('claim', []);
+    const res = await callProviders('claim', undefined, []);
     expect(res.ok).toBe(false);
     if (!res.ok) {
       expect(res.error).toMatch(/No fact-check provider configured/);
@@ -399,6 +399,7 @@ describe('callProviders (fallback)', () => {
       .mockResolvedValueOnce(okOpenAi('{"verdict":"credible"}'));
     const res = await callProviders(
       'claim',
+      undefined,
       [
         { provider: 'openai', apiKey: 'bad', model: 'gpt-4o-mini' },
         { provider: 'claude', apiKey: 'ck', model: 'claude-3' },

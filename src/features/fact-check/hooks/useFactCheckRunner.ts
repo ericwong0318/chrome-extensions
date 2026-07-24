@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
 
-export const runFactCheck = (text: string, language: string, timeoutSec: number): Promise<unknown> => {
+export const runFactCheck = (text: string, question: string | undefined, language: string, timeoutSec: number): Promise<unknown> => {
   return new Promise((resolve) => {
     if (!chrome.runtime?.connect) { resolve({ error: 'Extension unavailable.' }); return; }
     const port = chrome.runtime.connect({ name: 'factCheck' });
@@ -18,10 +18,10 @@ export const runFactCheck = (text: string, language: string, timeoutSec: number)
       if (chrome.runtime.lastError) finish({ error: chrome.runtime.lastError.message });
       else if (!settled) finish({ error: 'Connection closed.' });
     });
-    port.postMessage({ text, language, timeoutSec });
+    port.postMessage({ text, question, language, timeoutSec });
   });
 };
 
 export const useFactCheckRunner = (language: string, timeoutSec: number) => {
-  return useCallback((text: string) => runFactCheck(text, language, timeoutSec), [language, timeoutSec]);
+  return useCallback((text: string, question?: string) => runFactCheck(text, question, language, timeoutSec), [language, timeoutSec]);
 };

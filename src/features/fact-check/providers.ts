@@ -166,6 +166,7 @@ const extractText = (provider: ProviderId, data: unknown): string => {
 // we fall back to the next provider.
 export const callProvider = async (
   text: string,
+  question: string | undefined,
   config: FactCheckConfig,
   timeoutMs: number = DEFAULT_PROVIDER_TIMEOUT_MS,
   signal?: AbortSignal,
@@ -178,7 +179,7 @@ export const callProvider = async (
     };
   }
 
-  const userPrompt = buildUserPrompt(text, config.language);
+  const userPrompt = buildUserPrompt(text, question, config.language);
   const model = config.model || defaultModel(config.provider);
 
   try {
@@ -428,6 +429,7 @@ type StageReporter = (stage: string, isRetry: boolean) => void;
 
 export const callProviders = async (
   text: string,
+  question: string | undefined,
   configs: FactCheckConfig[],
   onStage?: StageReporter,
   timeoutMs: number = DEFAULT_PROVIDER_TIMEOUT_MS,
@@ -443,7 +445,7 @@ export const callProviders = async (
     if (!cfg || !cfg.provider) continue;
     const model = cfg.model ? ` (${cfg.model})` : '';
     onStage?.(`Contacting ${cfg.provider}${model}…`, isRetry);
-    const res = await callProvider(text, cfg, timeoutMs, signal);
+    const res = await callProvider(text, question, cfg, timeoutMs, signal);
     if (signal?.aborted) {
       return res.ok
         ? res

@@ -77,10 +77,12 @@ Analyze the user's text through THREE lenses and respond with ONLY a JSON object
 
 export const buildUserPrompt = (
   text: string,
+  question?: string,
   language: FactCheckLanguage = 'en',
 ): string => {
   const instruction = LANGUAGE_INSTRUCTION[language] || LANGUAGE_INSTRUCTION.en;
-  return `Analyze the following answer/question from a Zhihu post:\n\n"""\n${text.trim()}\n"""\n\n${instruction}`;
+  const questionSection = question ? `The original Zhihu question was:\n\n"""\n${question.trim()}\n"""\n\n` : '';
+  return `Analyze the following answer from a Zhihu post:\n\n${questionSection}"""\n${text.trim()}\n"""\n\n${instruction}`;
 };
 
 // Extract the first JSON object from a model response, tolerating code fences

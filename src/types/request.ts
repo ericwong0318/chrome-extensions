@@ -4,4 +4,5 @@ export interface Request {
   userId?: string;
   userName?: string;
   text?: string; // factCheck
+  question?: string; // factCheck question
 }

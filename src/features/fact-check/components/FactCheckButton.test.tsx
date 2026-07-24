@@ -101,11 +101,12 @@ describe('FactCheckButton', () => {
       screen.getByRole('button', { name: /fact check/i }).click();
     });
 
-    // handleClick should be called with the event, enabled, text, and onFactCheck
+    // handleClick should be called with the event, enabled, text, question, and onFactCheck
     expect(mockHandleClick).toHaveBeenCalledWith(
       expect.any(Object), // event
       true, // enabled
       'Test claim', // text
+      undefined, // question
       mockOnFactCheck // onFactCheck
     );
     

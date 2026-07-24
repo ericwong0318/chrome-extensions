@@ -48,7 +48,7 @@ describe('useFactCheckRunner', () => {
       
       mockPort.onDisconnect.addListener.mockImplementation(() => {});
 
-      const promise = runFactCheck('test text', 'zh-CN', 30);
+      const promise = runFactCheck('test text', undefined, 'zh-CN', 30);
       
       // Verify port was created with correct name
       expect(global.chrome.runtime.connect).toHaveBeenCalledWith({ name: 'factCheck' });
@@ -56,6 +56,7 @@ describe('useFactCheckRunner', () => {
       // Verify message was posted
       expect(mockPort.postMessage).toHaveBeenCalledWith({
         text: 'test text',
+        question: undefined,
         language: 'zh-CN',
         timeoutSec: 30,
       });
@@ -88,7 +89,7 @@ describe('useFactCheckRunner', () => {
       
       mockPort.onDisconnect.addListener.mockImplementation(() => {});
 
-      const promise = runFactCheck('test text', 'en', 9);
+      const promise = runFactCheck('test text', undefined, 'en', 9);
       
       // Simulate error response
       act(() => {
@@ -118,7 +119,7 @@ describe('useFactCheckRunner', () => {
       
       mockPort.onDisconnect.addListener.mockImplementation(() => {});
 
-      const promise = runFactCheck('test text', 'en', 9);
+      const promise = runFactCheck('test text', undefined, 'en', 9);
       
       // Simulate disabled response
       act(() => {
@@ -148,7 +149,7 @@ describe('useFactCheckRunner', () => {
       
       mockPort.onDisconnect.addListener.mockImplementation(() => {});
 
-      const promise = runFactCheck('test text', 'en', 9);
+      const promise = runFactCheck('test text', undefined, 'en', 9);
       
       // Simulate stage message (should be ignored)
       act(() => {
@@ -184,7 +185,7 @@ describe('useFactCheckRunner', () => {
         disconnectHandler = handler;
       });
 
-      const promise = runFactCheck('test text', 'en', 9);
+      const promise = runFactCheck('test text', undefined, 'en', 9);
       
       // Simulate disconnect
       act(() => {
@@ -214,7 +215,7 @@ describe('useFactCheckRunner', () => {
         disconnectHandler = handler;
       });
 
-      const promise = runFactCheck('test text', 'en', 9);
+      const promise = runFactCheck('test text', undefined, 'en', 9);
       
       // Simulate disconnect without error
       act(() => {
@@ -244,7 +245,7 @@ describe('useFactCheckRunner', () => {
       
       mockPort.onDisconnect.addListener.mockImplementation(() => {});
 
-      const promise = runFactCheck('test text', 'en', 9);
+      const promise = runFactCheck('test text', undefined, 'en', 9);
       
       // Simulate null message
       act(() => {
@@ -334,6 +335,7 @@ describe('useFactCheckRunner', () => {
       // Verify message was posted with correct params
       expect(mockPort.postMessage).toHaveBeenCalledWith({
         text: 'test claim',
+        question: undefined,
         language: 'zh-CN',
         timeoutSec: 15,
       });

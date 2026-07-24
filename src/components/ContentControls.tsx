@@ -61,6 +61,7 @@ export const ContentControls: React.FC = () => {
               <FactCheckButton
                 enabled={factCheckEnabled}
                 text={content.text}
+                question={content.question}
                 onFactCheck={runFactCheck}
               />
             </Box>,

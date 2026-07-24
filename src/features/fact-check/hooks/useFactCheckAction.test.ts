@@ -35,7 +35,7 @@ describe('useFactCheckAction', () => {
     const mockEvent = { preventDefault: vi.fn() } as unknown as React.MouseEvent<HTMLElement>;
     
     act(() => {
-      result.current.handleClick(mockEvent, true, 'Test claim', onFactCheck);
+      result.current.handleClick(mockEvent, true, 'Test claim', undefined, onFactCheck);
     });
 
     expect(result.current.loading).toBe(true);
@@ -52,7 +52,7 @@ describe('useFactCheckAction', () => {
     const mockEvent = { preventDefault: vi.fn() } as unknown as React.MouseEvent<HTMLElement>;
     
     act(() => {
-      result.current.handleClick(mockEvent, false, 'Test claim', onFactCheck);
+      result.current.handleClick(mockEvent, false, 'Test claim', undefined, onFactCheck);
     });
 
     expect(onFactCheck).not.toHaveBeenCalled();
@@ -73,7 +73,7 @@ describe('useFactCheckAction', () => {
     const mockEvent = { preventDefault: vi.fn() } as unknown as React.MouseEvent<HTMLElement>;
     
     act(() => {
-      result.current.handleClick(mockEvent, true, 'Test claim', onFactCheck);
+      result.current.handleClick(mockEvent, true, 'Test claim', undefined, onFactCheck);
     });
 
     expect(onFactCheck).not.toHaveBeenCalled();
@@ -93,7 +93,7 @@ describe('useFactCheckAction', () => {
     const mockEvent = { preventDefault: vi.fn() } as unknown as React.MouseEvent<HTMLElement>;
     
     act(() => {
-      result.current.handleClick(mockEvent, true, 'Test claim', onFactCheck);
+      result.current.handleClick(mockEvent, true, 'Test claim', undefined, onFactCheck);
     });
 
     expect(onFactCheck).not.toHaveBeenCalled();
@@ -115,7 +115,7 @@ describe('useFactCheckAction', () => {
     const mockEvent = { preventDefault: vi.fn() } as unknown as React.MouseEvent<HTMLElement>;
     
     await act(async () => {
-      result.current.handleClick(mockEvent, true, 'Test claim', onFactCheck);
+      result.current.handleClick(mockEvent, true, 'Test claim', undefined, onFactCheck);
       // Advance timers to complete the async operation
       await vi.advanceTimersByTimeAsync(10000);
     });
@@ -135,7 +135,7 @@ describe('useFactCheckAction', () => {
     const mockEvent = { preventDefault: vi.fn() } as unknown as React.MouseEvent<HTMLElement>;
     
     await act(async () => {
-      result.current.handleClick(mockEvent, true, 'Test claim', onFactCheck);
+      result.current.handleClick(mockEvent, true, 'Test claim', undefined, onFactCheck);
       await vi.advanceTimersByTimeAsync(10000);
     });
 
@@ -153,7 +153,7 @@ describe('useFactCheckAction', () => {
     const mockEvent = { preventDefault: vi.fn() } as unknown as React.MouseEvent<HTMLElement>;
     
     await act(async () => {
-      result.current.handleClick(mockEvent, true, 'Test claim', onFactCheck);
+      result.current.handleClick(mockEvent, true, 'Test claim', undefined, onFactCheck);
       await vi.advanceTimersByTimeAsync(10000);
     });
 
@@ -170,7 +170,7 @@ describe('useFactCheckAction', () => {
     const mockEvent = { preventDefault: vi.fn() } as unknown as React.MouseEvent<HTMLElement>;
     
     await act(async () => {
-      result.current.handleClick(mockEvent, true, 'Test claim', onFactCheck);
+      result.current.handleClick(mockEvent, true, 'Test claim', undefined, onFactCheck);
       await vi.advanceTimersByTimeAsync(10000);
     });
 
@@ -227,7 +227,7 @@ describe('useFactCheckAction', () => {
     const mockEvent = { preventDefault: vi.fn() } as unknown as React.MouseEvent<HTMLElement>;
     
     act(() => {
-      result.current.handleClick(mockEvent, true, 'Test claim', onFactCheck);
+      result.current.handleClick(mockEvent, true, 'Test claim', undefined, onFactCheck);
     });
 
     // Progress should start at some value and increase
@@ -254,7 +254,7 @@ describe('useFactCheckAction', () => {
     const mockEvent = { preventDefault: vi.fn() } as unknown as React.MouseEvent<HTMLElement>;
     
     await act(async () => {
-      result.current.handleClick(mockEvent, true, 'Test claim', onFactCheck);
+      result.current.handleClick(mockEvent, true, 'Test claim', undefined, onFactCheck);
       await vi.advanceTimersByTimeAsync(10000);
     });
 
@@ -270,7 +270,7 @@ describe('useFactCheckAction', () => {
     const mockEvent = { preventDefault: vi.fn() } as unknown as React.MouseEvent<HTMLElement>;
     
     await act(async () => {
-      result.current.handleClick(mockEvent, true, 'Test claim', onFactCheck);
+      result.current.handleClick(mockEvent, true, 'Test claim', undefined, onFactCheck);
       await vi.advanceTimersByTimeAsync(10000);
     });
 

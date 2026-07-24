@@ -1,12 +1,29 @@
 import { useEffect, useRef, useState } from 'react';
 import { logError } from '../features/logging';
 
-export type ZhihuContent = { id: string; text: string; element: HTMLElement };
+export type ZhihuContent = { id: string; text: string; element: HTMLElement; question?: string };
 
 export const CONTENT_SELECTORS = ['.RichText', '.ContentItem-title', '.AnswerCard', '.QuestionAnswer-content'];
+export const QUESTION_SELECTORS = ['.QuestionHeader-title', '.QuestionHeader-main h1', '.Question-title', 'h1.QuestionHeader-title'];
+
+const getQuestionText = (): string | undefined => {
+  try {
+    for (const selector of QUESTION_SELECTORS) {
+      const el = document.querySelector(selector) as HTMLElement | null;
+      if (el) {
+        const text = (el.innerText || el.textContent || '').trim();
+        if (text && text.length > 5) return text;
+      }
+    }
+    return undefined;
+  } catch {
+    return undefined;
+  }
+};
 
 export const getZhihuContent = (): ZhihuContent[] => {
   try {
+    const questionText = getQuestionText();
     const nodes = Array.from(document.querySelectorAll(CONTENT_SELECTORS.join(',')));
     const byAnchor = new Map<HTMLElement, ZhihuContent>();
     nodes.forEach((el) => {
@@ -17,13 +34,15 @@ export const getZhihuContent = (): ZhihuContent[] => {
       const existing = byAnchor.get(anchor);
       if (!existing) {
         const id = anchor.getAttribute('data-id') || text.slice(0, 40);
-        byAnchor.set(anchor, { id, text, element: anchor });
+        byAnchor.set(anchor, { id, text, element: anchor, question: questionText });
       } else {
         if (text.length > existing.text.length) existing.text = text;
         if (!existing.element.getAttribute('data-id') && node.getAttribute('data-id')) {
           existing.element = node;
           existing.id = node.getAttribute('data-id') || existing.id;
         }
+        // Ensure question is attached
+        if (questionText && !existing.question) existing.question = questionText;
       }
     });
     return Array.from(byAnchor.values());
