@@ -2,6 +2,14 @@
 
 A Chrome extension that lets you block users on Zhihu by hiding all their posts. When you block someone, their content disappears from your feed and you get a simple button to manage your blocked users.
 
+## Documentation
+
+| File | Goal | Audience |
+| :--- | :--- | :--- |
+| **README.md** | High-level project summary, features, prerequisites, & user setup | Users & New Developers |
+| **DEVELOPER.md** | Deep architectural breakdown, state management, & domain logic | Contributors & Maintainers |
+| **CLAUDE.md** | Machine-readable CLI triggers, test workflows, & strict guardrails | AI Coding Agents |
+
 ## What It Does
 
 - **Block users**: Hide posts from specific Zhihu users with one click
@@ -17,128 +25,68 @@ A Chrome extension that lets you block users on Zhihu by hiding all their posts.
 - **Instant content hiding**: Blocked content disappears immediately.
 - **Easy management**: View and unblock users anytime via the extension options page.
 
-
-
 ### AI-Powered Fact-Checking (Optional)
 
 - **Contextual analysis**: Get AI-driven analysis of Zhihu content (posts, questions, answers).
 - **Multi-language support**: Choose reply language (English, Traditional/Simplified Chinese).
 - **Flexible AI providers with fallback**: Configure multiple AI providers (Claude, OpenAI, Gemini, DeepSeek, OpenRouter, local/Ollama, or any OpenAI-compatible endpoint). The extension automatically falls back to the next provider if the primary one fails.
 
-
-
 ## Quick Start
 
-1. **Install dependencies & build**:
-  ```bash
+### Option 1: Install from GitHub Release
+
+1. Download the latest `.zip` from [GitHub Releases](https://github.com/ericwong0318/chrome-extensions/releases)
+2. Unzip the package
+3. In Chrome, navigate to `chrome://extensions`
+4. Enable **Developer mode**
+5. Click **Load unpacked** and select the unzipped folder
+
+### Option 2: Build from Source
+
+1. Clone the repo and install dependencies:
+   ```bash
+   git clone https://github.com/ericwong0318/chrome-extensions.git
+   cd chrome-extensions
    npm install
    npm run build
-  ```
-2. **Load in Chrome**:
-  - Navigate to `chrome://extensions`.
-  - Enable "Developer mode".
-  - Click "Load unpacked" and select the `dist/` folder.
-3. **Start blocking and fact-checking**:
-  - Visit Zhihu.
-  - Use the **Block** button next to user names to hide their content.
-  - After you click the extension icon and setup AI provider in option page, click the **Fact Check** button on content to get AI analysis. 
+   ```
+2. In Chrome, navigate to `chrome://extensions`
+3. Enable **Developer mode**
+4. Click **Load unpacked** and select the `dist/` folder
 
-## Tech Stack (Behind the Scenes)
+### Usage
 
+- Visit Zhihu and use the **Block** button next to user names to hide their content.
+- Open the extension options page to configure AI providers, then use the **Fact Check** button on content to get AI analysis.
+
+## Tech Stack
 
 | Layer    | Technology                 |
 | -------- | -------------------------- |
-| Build    | Vite 8 + CRX plugin        |
-| UI       | React 19 + MUI 9 + Emotion |
-| Testing  | Vitest 4 + Playwright 1    |
-| Language | TypeScript 5               |
+| Build    | Vite + CRX plugin          |
+| UI       | React + MUI + Emotion      |
+| Testing  | Vitest + Playwright        |
+| Language | TypeScript                 |
 
+## Developer Notes
 
-
-
-## Development
-
-
-
-### Commands
-
-```bash
-npm run dev        # Development mode
-npm run build      # Build for production
-npm run preview    # Preview built extension
-npm test          # Run tests
-npm run test:watch # Watch mode for tests
-```
-
-
-
-### Project Structure
-
-```
-src/
-  background.ts    # Extension background logic
-  content.tsx     # Content script (injects into web pages)
-  blocker/         # Blocking functionality
-  factcheck/       # AI fact-checking
-  options/         # User settings page
-  logger.ts        # Logging utility
-e2e/              # End-to-end tests
-```
-
-
-
-## How It Works
-
-1. **Detection**: Content script looks for Zhihu user links
-2. **Injection**: Adds Block/Fact Check buttons next to user names
-3. **Storage**: Blocked users saved to Chrome storage (syncs across devices)
-4. **Hiding**: Blocked content hidden via CSS (`display: none`)
-5. **Management**: Options page lets you view and manage blocked users
-
-
-
-## Testing
-
-The extension has comprehensive tests:
-
-- **53 test cases** across 6 files
-- **52 unit/integration tests** with Vitest
-- **1 end-to-end test** with Playwright
-- All tests run in CI before merging
-
-
-
-## Storage
-
-Blocked users are stored in Chrome's sync storage under the key `zhihuBlockedUsers` as an array of user objects. This means your blocked list syncs across all Chrome devices where you're signed in.
-
-Fact-check providers are stored under the key `factCheckConfigs` as an ordered array of provider configs (each with `provider`, `apiKey`, `model`, `baseUrl`, `language`). The first entry is the primary provider; subsequent entries are fallbacks tried in order when a provider fails. A legacy single `factCheckConfig` key is still read for backward compatibility.
-
-## Security & Privacy
-
-- **Local storage**: User data stored in your Chrome account
-- **Secure messaging**: Background script handles all communication
-- **Shadow DOM**: Extension styles isolated to prevent page contamination
-
-
-
-## CI/CD
-
-The project uses GitHub Actions for:
-
-- **CI**: Runs tests and builds on every PR
-- **Release**: Automated releases with version bumping
-- **Conventional commits**: Automated version management
-
-
+See [DEVELOPER.md](./DEVELOPER.md) for:
+- Architecture diagram and how the extension works
+- Deep-dive project structure
+- Storage, security, privacy, and CI details
+- Development tips and common gotchas
 
 ## Getting Help
 
 For issues or questions:
 
 1. Check the existing tests for examples
-2. Review the code in `src/` for implementation details
+2. See [DEVELOPER.md](./DEVELOPER.md) for implementation details
 3. Look at the options page for configuration options
+
+## License
+
+MIT
 
 ---
 

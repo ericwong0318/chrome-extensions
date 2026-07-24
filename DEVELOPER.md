@@ -1,119 +1,104 @@
-# Developer Guidelines
+# Developer Documentation
+
+> For a high-level overview, see [README.md](./README.md). This file covers architecture, project structure, and contributor guidance.
+
+## Architecture
+
+```mermaid
+graph TD
+    A["Content Script<br/>(src/content.tsx)"] -->|sendMessage| B["Background Script<br/>(src/background.ts)"]
+    B -->|process| C["Storage<br/>(chrome.storage.local/sync)"]
+    C -->|read/write| D["Options Page<br/>(src/options/)"]
+    B -->|sendResponse| A
+    B -->|handle actions| E["Feature Modules"]
+    E -->|blocker| F["Blocker<br/>(src/features/block-user/)"]
+    E -->|factcheck| G["FactCheck<br/>(src/features/fact-check/)"]
+```
+
+## How It Works
+
+1. **Detection**: Content script looks for Zhihu user links
+2. **Injection**: Adds Block/Fact Check buttons next to user names
+3. **Storage**: Blocked users saved to Chrome storage (syncs across devices)
+4. **Hiding**: Blocked content hidden via CSS (`display: none`)
+5. **Management**: Options page lets you view and manage blocked users
 
 ## Project Structure
 
-### Core Components
-- `src/`: Main extension source code
-  - `background.ts`: MV3 Service Worker for message handling, background tasks, and service worker logic
-  - `content.tsx`: Content script for DOM injection and UI overlay
-  - `blocker/`: User blocking functionality
-    - `Blocker.tsx`: UI component for blocking users
-    - `useBlockUser.ts`: Custom hook for blocking logic
-  - `factcheck/`: AI fact-checking module
-    - `pipeline.ts`: Fact-checking pipeline orchestrator
-    - `providers.ts`: Provider communication and fallback logic
-    - `agents/`: Individual fact-checking agents (Critic, Parser, Logic, Bias)
-    - `factcheck.test.ts`: Tests for fact-checking functionality
-  - `options/`: Extension settings and options page
-    - `Options.tsx`: Main options interface
-    - `useZhihuContent.ts`: Hook for accessing Zhihu content
-  - `logger.ts`: Logging utility for debugging and auditing
-  - `components/`: Reusable UI components
-    - `BlockUserButton.tsx`: Button for blocking users
-    - `FactCheckButton.tsx`: Button for triggering fact-checking
-    - `LogViewer.tsx`: Viewer for extension logs
-  - `hooks/`: Custom React hooks
-    - `useFactCheckConfig.ts`: Hook for managing fact-check configurations
-    - `useFactCheckRunner.ts`: Hook for executing fact-check workflows
-    - `useLogs.ts`: Hook for accessing logs
-    - `useZhihuContent.ts`: Hook for interacting with Zhihu content
-  - `types/`: TypeScript type definitions
-    - `request.ts`: Type definitions for request/response types
-    - `index.ts`: Main type exports
-  - `test/`: Test utilities and setup
-    - `setup.ts`: Test setup with chrome storage mocks
+```
+src/
+├── background.ts    # Extension background logic
+├── content.tsx      # Content script (injects into web pages)
+├── options/         # User settings page
+├── features/        # Feature modules
+│   ├── block-user/  # User blocking functionality
+│   └── fact-check/  # AI fact-checking
+├── components/      # Shared UI components
+├── hooks/           # Custom React hooks
+├── types/           # TypeScript type definitions
+└── test/            # Test setup utilities
 
-### Testing
-- `e2e/`: End-to-end tests with Playwright
-  - `extension.spec.ts`: E2E test specifications
-  - `server.mjs`: E2E server configuration
-  - `fixtures/`: Test fixtures and helpers
-- Unit and integration tests using Vitest
-- Test setup with proper mocking of chrome APIs
+e2e/                 # End-to-end tests
+```
 
-### Configuration Files
-- `manifest.json`: Extension manifest (MV3) with permissions and content scripts
-- `vite.config.ts`: Vite configuration with CRX plugin for Chrome extensions
-- `vitest.config.ts`: Vitest configuration for test runs
-- `playwright.config.js`: Playwright E2E test configuration
-- `tsconfig.json`: TypeScript compiler configuration with strict mode
-- `eslint.config.mjs`: ESLint configuration with Prettier integration
-- `prettierrc.json`: Prettier configuration for code formatting
-- `vitest.config.ts`: Vitest test runner configuration
+## Storage
 
-### Build & Deployment
-- Production Build: `npm run build` → outputs to `dist/`
-- Development Mode: `npm run dev` for hot reloading
-- Preview Built Extension: `npm run preview`
-- Type Safety Check: `npx tsc --noEmit` for type checking without emitting files
-- Unit Tests: `npm test` (alias for `vitest run`)
-- E2E Tests: `npx playwright test` (requires prior build)
-- Watch Mode: `npm run test:watch` for continuous testing
+- **Blocked users**: Stored in `chrome.storage.sync` under key `zhihuBlockedUsers` as an array of user objects. Syncs across all Chrome devices.
+- **Fact-check configs**: Stored under key `factCheckConfigs` as an ordered array of provider configs (each with `provider`, `apiKey`, `model`, `baseUrl`, `language`). The first entry is the primary provider; subsequent entries are fallbacks. A legacy single `factCheckConfig` key is still read for backward compatibility.
+- **Logs**: Stored in `chrome.storage.local` under key `extensionLogs`.
 
-## Coding Standards
-- TypeScript: Strict mode enforced, no implicit any types
-- React: Functional components with hooks only
-- UI Library: MUI 5 + Emotion for styling
-- Import Order: External dependencies → internal utilities → component styles
-- Naming Conventions:
-  - Files/Directories: kebab-case
-  - Components: PascalCase
-  - Variables/Functions: camelCase
-- Documentation: JSDoc for all public APIs
-- Performance: Lazy-load non-critical components, minimize background work
-- Error Handling: try/catch for async operations, graceful degradation
-- Security: Input sanitization, message origin validation, CSP compliance
+## Security & Privacy
 
-## AI Task Completion Protocol
-After completing any development task, the AI must run the full test suite and build to verify changes:
-1. Run tests: `npm test -- path/to/test-file` or `npm test` for all tests
-2. Build project: `npm run build`
+- **Local storage**: User data stored in your Chrome account
+- **Secure messaging**: Background script handles all communication
+- **Shadow DOM**: Extension styles isolated to prevent page contamination
 
-Both commands must pass before considering the task complete.
+## CI/CD
 
-## Constraints
-1. Pass CI checks (GitHub Actions)
-2. Content scripts: No direct DOM manipulation (use React portals)
-3. Background scripts: Service worker with message passing only
-4. Storage: `chrome.storage.sync` for user data, `chrome.storage.local` for logs
-5. Security: Sanitize inputs, validate message origins, CSP compliance
-6. **File Length Limit:** No single `.ts`/`.tsx` file may exceed **250 lines**. When a file reaches capacity, extract logical modules into sub-files (e.g. `src/factcheck/agents/`). This keeps modules readable and reviewable.
+The project uses GitHub Actions for:
 
-## Extension Specifics
-- Blocked users: Stored in `chrome.storage.sync` under key `zhihuBlockedUsers` (array of {id, name})
-- Fact-check config: Stored in `chrome.storage.sync` under key `factCheckConfigs` (ordered array of provider configs; first = primary, rest = fallbacks). Legacy single `factCheckConfig` still read for backward compatibility.
-- Logs: Stored in `chrome.storage.local` under key `extensionLogs`
-- Message actions: `blockUser`, `unblockUser`, `getBlockedUsers`, `factCheck`
-- Toolbar action: Opens options page via `chrome.runtime.openOptionsPage`
+- **CI**: Runs tests and builds on every PR
+- **Release**: Automated releases with version bumping
+- **Conventional commits**: Automated version management
 
-## Fact-Check Provider Fallback
-- `src/factcheck/providers.ts` exports `callProvider` (single provider call) and `callProviders` (ordered list with fallback).
-- `callProviders` tries each config in order; on any failure (missing key, HTTP error, network error) it moves to the next provider. If all fail, it returns aggregated error listing all attempts.
-- The background service worker (`src/background.ts`) reads `factCheckConfigs` and calls `callProviders`, returning the successful provider id to UI.
-- Options page allows users to add/remove/reorder providers to define fallback order.
+## Development Commands
 
-## Testing Strategy
-- Unit Tests: Cover core logic, hooks, and utilities with Vitest + jsdom
-- Integration Tests: Test component interactions and state management
-- E2E Tests: Validate user flows with Playwright across Chrome instances
-- Test Coverage: Minimum 80% coverage required for all new code
-- Test Isolation: Mock chrome APIs and storage appropriately
-- Test Naming: Follow pattern `[feature].test.[extension]` for clarity
+```bash
+npm run dev        # Development mode
+npm run build      # Build for production
+npm run preview    # Preview built extension
+npm test           # Run tests
+npm run test:watch # Watch mode for tests
+```
 
-## Linting & Formatting
-- Pre-commit Hook: ESLint + Prettier validation
-- Scripts: 
-  - `npm run lint`: Run ESLint across all source files
-  - `npm run format`: Apply Prettier formatting
-  - `npm run lint:fix`: Auto-fix linting issues
-- Integration: Linting runs automatically before commit and test execution
+## Human Developer Notes
+
+### Important Patterns
+
+- Feature organization: All feature code lives under `src/features/` with each feature in its own subdirectory
+- Feature boundaries: Keep blocking and fact-checking completely separate (different directories, hooks, components)
+- Context script: All UI injection must use React portals with Shadow DOM for style isolation
+- Background script: Service worker only handles message routing; never access DOM from background
+- Storage keys: Use `chrome.storage.sync` for user config (blocked users, provider configs); use `chrome.storage.local` for logs
+
+### Common Gotchas
+
+- Do not access `window` or `document` in background.ts (service worker context has no DOM)
+- Message handlers must validate `sender.origin` for security
+- React components in content scripts require Shadow DOM wrapper to avoid page CSS bleeding
+- Fact-check provider calls are async and may take 30+ seconds; always show loading state
+- When adding new tests, mock `chrome.*` APIs with `src/test/setup.ts` helpers
+
+### Development Tips
+
+- Use `npm run dev` for live reloading; changes to content scripts require page refresh
+- Debug content scripts via Chrome DevTools on the Zhihu page (not extension popup)
+- Debug background service worker in `chrome://extensions` → service worker link
+- Check extension logs via Options page LogViewer or `chrome.storage.local` → `extensionLogs`
+
+---
+
+## Reference Links
+
+- [README.md](./README.md) - High-level project summary, features, quick start, user setup
+- [CLAUDE.md](./CLAUDE.md) - AI development rules and constraints
