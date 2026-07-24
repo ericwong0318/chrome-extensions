@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Box, Button, Chip, Popover, Typography, Divider, LinearProgress, Tooltip } from '@mui/material';
 import FactCheckIcon from '@mui/icons-material/FactCheck';
-import { useFactCheckAction, FactCheckResult } from '../hooks/useFactCheckAction';
+import { useFactCheckAction } from '../hooks/useFactCheckAction';
 
 const FACTCHECK_CLASS = 'zhihu-factcheck-inline';
 

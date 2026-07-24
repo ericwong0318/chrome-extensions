@@ -58,7 +58,7 @@ export const useBlockUser = () => {
       });
     };
     load();
-    const listener = (changes: any, area: string) => {
+    const listener = (changes: Record<string, { oldValue?: unknown; newValue?: unknown }>, area: string) => {
       if (area !== 'sync') return;
       if (changes.zhihuBlockedUsers) setBlocked(changes.zhihuBlockedUsers.newValue);
     };

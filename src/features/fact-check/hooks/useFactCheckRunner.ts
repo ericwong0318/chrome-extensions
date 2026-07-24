@@ -5,7 +5,7 @@ export const runFactCheck = (text: string, language: string, timeoutSec: number)
     if (!chrome.runtime?.connect) { resolve({ error: 'Extension unavailable.' }); return; }
     const port = chrome.runtime.connect({ name: 'factCheck' });
     let settled = false;
-    const finish = (val: unknown) => { if (settled) return; settled = true; try { port.disconnect(); } catch {} resolve(val); };
+    const finish = (val: unknown) => { if (settled) return; settled = true; try { port.disconnect(); } catch { /* ignore */ } resolve(val); };
     port.onMessage.addListener((msg: unknown) => {
       if (!msg) { finish({ error: 'No response.' }); return; }
       if (typeof msg === 'object' && msg && 'stage' in msg) { return; }

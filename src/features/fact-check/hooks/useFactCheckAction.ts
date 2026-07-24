@@ -16,8 +16,7 @@ export const useFactCheckAction = () => {
   const [progress, setProgress] = useState(0);
   const [stage, setStage] = useState('');
 
-  const handleClick = async (e: React.MouseEvent<HTMLElement>, enabled: boolean, text: string, onFactCheck: (text: string, onStage?: (stage: string, isRetry?: boolean) => void) => Promise<unknown>) => {
-    const target = e.currentTarget;
+  const handleClick = async (_e: React.MouseEvent<HTMLElement>, enabled: boolean, text: string, onFactCheck: (text: string, onStage?: (stage: string, isRetry?: boolean) => void) => Promise<unknown>) => {
     if (result || error) return;
     if (!enabled) return;
     setLoading(true); setError(null); setProgress(0); setStage('Starting…');

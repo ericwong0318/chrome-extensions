@@ -8,7 +8,7 @@ import {
 } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ContentControls } from './ContentControls';
-import { mockChromeStorage } from '../../../test/setup';
+import { mockChromeStorage } from '../test/setup';
 
 type BlockedUser = { id: string; name: string };
 type BlockedUsersResult = { zhihuBlockedUsers: BlockedUser[] };
