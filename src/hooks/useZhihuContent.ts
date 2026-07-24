@@ -5,7 +5,7 @@ export type ZhihuContent = { id: string; text: string; element: HTMLElement };
 
 export const CONTENT_SELECTORS = ['.RichText', '.ContentItem-title', '.AnswerCard', '.QuestionAnswer-content'];
 
-const getZhihuContent = (): ZhihuContent[] => {
+export const getZhihuContent = (): ZhihuContent[] => {
   try {
     const nodes = Array.from(document.querySelectorAll(CONTENT_SELECTORS.join(',')));
     const byAnchor = new Map<HTMLElement, ZhihuContent>();

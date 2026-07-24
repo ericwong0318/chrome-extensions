@@ -12,6 +12,7 @@ export const BlockUsersControl: React.FC = () => {
   return (
     <Box
       component="span"
+      data-testid="block-users-control"
       sx={{
         display: 'inline-flex',
         alignItems: 'center',
