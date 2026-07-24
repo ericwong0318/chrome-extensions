@@ -4,10 +4,6 @@ import {
   Typography,
   Paper,
   Button,
-  List,
-  ListItem,
-  ListItemText,
-  Divider,
   Chip,
   ThemeProvider,
   createTheme,
@@ -15,6 +11,7 @@ import {
   MenuItem,
   Stack,
   IconButton,
+  Divider,
 } from '@mui/material';
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
@@ -29,6 +26,7 @@ import {
   callProvider,
 } from '../features/fact-check/providers';
 import { normalizeFactCheckConfigs } from '../features/fact-check/storage';
+import { BlockUserList } from '../features/block-user/components/BlockUserList';
 
 type BlockedUser = { id: string; name: string };
 
@@ -234,51 +232,11 @@ const Options: React.FC = () => {
   return (
     <ThemeProvider theme={createTheme()}>
       <Paper sx={{ p: 2 }} elevation={0}>
-        <Typography variant="h5" gutterBottom>
-          Blocked Users
-        </Typography>
-        <Typography variant="body2" color="text.secondary" gutterBottom>
-          Manage the list of Zhihu users you have blocked.
-        </Typography>
-
-        {blocked.length === 0 ? (
-          <Typography variant="body1" sx={{ mt: 2 }}>
-            No users blocked.
-          </Typography>
-        ) : (
-          <Box sx={{ mt: 2 }}>
-            <Button
-              variant="outlined"
-              color="error"
-              size="small"
-              onClick={clearAllBlockedUsers}
-              sx={{ mb: 2 }}
-            >
-              Clear all
-            </Button>
-            <List disablePadding>
-              {blocked.map((user, idx) => (
-                <React.Fragment key={user.id}>
-                  {idx > 0 && <Divider component="li" />}
-                  <ListItem
-                    secondaryAction={
-                      <Button
-                        variant="text"
-                        color="secondary"
-                        size="small"
-                        onClick={() => unblockUser(user.id)}
-                      >
-                        Unblock
-                      </Button>
-                    }
-                  >
-                    <ListItemText primary={user.name} secondary={user.id} />
-                  </ListItem>
-                </React.Fragment>
-              ))}
-            </List>
-          </Box>
-        )}
+        <BlockUserList
+          blocked={blocked}
+          onUnblock={unblockUser}
+          onClearAll={clearAllBlockedUsers}
+        />
 
         <Divider sx={{ my: 3 }} />
 
