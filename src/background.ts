@@ -1,6 +1,6 @@
 import { logError } from './utils';
-import { callProviders, normalizeFactCheckConfigs } from './factcheck';
-import type { Request } from './types/request'
+import { callProviders, normalizeFactCheckConfigs } from './features/factcheck';
+import type { Request } from './types/request';
 export { };
 
 /** Message sent over the 'factCheck' port from the content script. */

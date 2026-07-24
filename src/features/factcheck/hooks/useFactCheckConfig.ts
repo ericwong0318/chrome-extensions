@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { normalizeFactCheckConfigs } from '../factcheck';
+import { normalizeFactCheckConfigs } from '../storage';
 
 export const useFactCheckConfig = () => {
   const [factCheckEnabled, setFactCheckEnabled] = useState(false);

@@ -8,7 +8,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import Options from './Options';
 import { mockChromeStorage } from '../test/setup';
 import { logError, clearLogs } from '../utils';
-import { FactCheckConfig } from '../hooks/factcheck/providers';
+import { FactCheckConfig } from '../features/factcheck/providers';
 
 // Minimal shape of the chrome global used by these tests.
 type ChromeGlobal = {

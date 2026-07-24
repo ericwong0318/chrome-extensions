@@ -9,7 +9,7 @@ import {
 } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import FactCheck from './FactCheck';
-import { mockChromeStorage } from '../test/setup';
+import { mockChromeStorage } from '../../../test/setup';
 
 describe('FactCheck UI', () => {
   beforeEach(() => {

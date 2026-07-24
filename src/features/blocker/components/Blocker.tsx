@@ -1,6 +1,6 @@
 import React from 'react';
 import { Box } from '@mui/material';
-import { useBlockUser, INLINE_CLASS } from '../blocker/useBlockUser';
+import { useBlockUser, INLINE_CLASS } from '../hooks/useBlockUser';
 import { BlockButton } from './BlockUserButton';
 
 /**
