@@ -350,7 +350,7 @@ export const callProvider = async (
     }
 
     const controller = new AbortController();
-    const timeout = window.setTimeout(() => controller.abort(), timeoutMs);
+    const timeout = setTimeout(() => controller.abort(), timeoutMs);
     const onAbort = () => controller.abort();
     if (signal) signal.addEventListener('abort', onAbort, { once: true });
     let res: Response;
@@ -365,7 +365,7 @@ export const callProvider = async (
         signal: controller.signal,
       });
     } catch (err) {
-      window.clearTimeout(timeout);
+      clearTimeout(timeout);
       if (signal) signal.removeEventListener('abort', onAbort);
       const aborted = controller.signal.aborted;
       const error = aborted
@@ -386,9 +386,8 @@ export const callProvider = async (
         attempts: [{ provider: config.provider, error }],
       };
     }
-    window.clearTimeout(timeout);
+    clearTimeout(timeout);
     if (signal) signal.removeEventListener('abort', onAbort);
-    window.clearTimeout(timeout);
 
     if (!res.ok) {
       const detail = await res.text().catch(() => '');
